@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Gender {
+  MUJER
+  HOMBRE
+  UNISEX
+  NINOS
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum BannerPlacement {
+  HERO
+  SECONDARY
+}
+
+enum ContactStatus {
+  NEW
+  READ
+  ARCHIVED
+}
+
+enum AdminRole {
+  OWNER
+  MANAGER
+}
+
+model Product {
+  id               String        @id @default(cuid())
+  name             String
+  slug             String        @unique
+  description      String?       @db.Text
+  garmentType      String
+  gender           Gender
+  productModel     String?
+  size             String
+  predominantColor String
+  price            Decimal?      @db.Decimal(10, 2)
+  imageUrl         String?
+  isAvailable      Boolean       @default(true)
+  status           ProductStatus @default(ACTIVE)
+  viewCount        Int           @default(0)
+  inquiryCount     Int           @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([status, createdAt])
+  @@index([gender])
+  @@index([garmentType])
+  @@index([predominantColor])
+}
+
+model Banner {
+  id          String          @id @default(cuid())
+  title       String
+  subtitle    String?
+  imageUrl    String
+  targetUrl   String?
+  placement   BannerPlacement
+  sortOrder   Int             @default(0)
+  isActive    Boolean         @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([placement, isActive, sortOrder])
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String
+  comment   String        @db.Text
+  ipHash    String?
+  userAgent String?
+  status    ContactStatus @default(NEW)
+  createdAt DateTime      @default(now())
+
+  @@index([ipHash, createdAt])
+  @@index([status, createdAt])
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  role         AdminRole @default(MANAGER)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
