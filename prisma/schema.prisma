@@ -44,9 +44,13 @@ model Product {
   gender           Gender
   productModel     String?
   size             String
+  sizeFrom         String?
+  sizeTo           String?
+  isOneSize        Boolean       @default(false)
   predominantColor String
   price            Decimal?      @db.Decimal(10, 2)
   imageUrl         String?
+  imageUrls        Json?
   isAvailable      Boolean       @default(true)
   status           ProductStatus @default(ACTIVE)
   viewCount        Int           @default(0)

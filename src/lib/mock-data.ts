@@ -7,7 +7,6 @@ export const mockHeroBanners: BannerData[] = [
     subtitle: "Prendas livianas, colores suaves y siluetas simples para todos los dias.",
     imageUrl:
       "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=82",
-    targetUrl: "/catalogo",
     placement: "HERO"
   },
   {
@@ -16,7 +15,6 @@ export const mockHeroBanners: BannerData[] = [
     subtitle: "Remeras, camisas y pantalones listos para combinar.",
     imageUrl:
       "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1600&q=82",
-    targetUrl: "/catalogo?type=Remera",
     placement: "HERO"
   }
 ];
@@ -28,7 +26,6 @@ export const mockSecondaryBanners: BannerData[] = [
     subtitle: "Consulta disponibilidad y formas de pago antes de retirar.",
     imageUrl:
       "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1400&q=80",
-    targetUrl: "/#contacto",
     placement: "SECONDARY"
   },
   {
@@ -37,7 +34,6 @@ export const mockSecondaryBanners: BannerData[] = [
     subtitle: "Piezas comodas para armar conjuntos simples.",
     imageUrl:
       "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1400&q=80",
-    targetUrl: "/catalogo",
     placement: "SECONDARY"
   }
 ];
@@ -51,11 +47,17 @@ export const mockProducts: ProductCardData[] = [
     garmentType: "Camisa",
     gender: "UNISEX",
     productModel: "Relax",
-    size: "M",
+    size: "S a L",
+    sizeFrom: "S",
+    sizeTo: "L",
+    isOneSize: false,
     predominantColor: "Blanco",
     price: 44900,
     imageUrl:
       "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?auto=format&fit=crop&w=900&q=80",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?auto=format&fit=crop&w=900&q=80"
+    ],
     viewCount: 96,
     inquiryCount: 18,
     createdAt: new Date("2026-04-10")
@@ -68,11 +70,17 @@ export const mockProducts: ProductCardData[] = [
     garmentType: "Pantalon",
     gender: "MUJER",
     productModel: "Recto",
-    size: "S",
+    size: "Talle unico (S)",
+    sizeFrom: "S",
+    sizeTo: null,
+    isOneSize: true,
     predominantColor: "Negro",
     price: 58200,
     imageUrl:
       "https://images.unsplash.com/photo-1506629905607-d9c297d7bbba?auto=format&fit=crop&w=900&q=80",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1506629905607-d9c297d7bbba?auto=format&fit=crop&w=900&q=80"
+    ],
     viewCount: 130,
     inquiryCount: 26,
     createdAt: new Date("2026-04-12")
@@ -85,11 +93,17 @@ export const mockProducts: ProductCardData[] = [
     garmentType: "Remera",
     gender: "HOMBRE",
     productModel: "Clasica",
-    size: "L",
+    size: "M a XL",
+    sizeFrom: "M",
+    sizeTo: "XL",
+    isOneSize: false,
     predominantColor: "Azul",
     price: 22900,
     imageUrl:
       "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80"
+    ],
     viewCount: 182,
     inquiryCount: 31,
     createdAt: new Date("2026-04-15")
@@ -102,11 +116,17 @@ export const mockProducts: ProductCardData[] = [
     garmentType: "Vestido",
     gender: "MUJER",
     productModel: "Midi",
-    size: "M",
+    size: "S a M",
+    sizeFrom: "S",
+    sizeTo: "M",
+    isOneSize: false,
     predominantColor: "Verde",
     price: 63800,
     imageUrl:
       "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=900&q=80",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=900&q=80"
+    ],
     viewCount: 111,
     inquiryCount: 22,
     createdAt: new Date("2026-04-18")
@@ -119,11 +139,17 @@ export const mockProducts: ProductCardData[] = [
     garmentType: "Campera",
     gender: "UNISEX",
     productModel: "Denim",
-    size: "L",
+    size: "M a XL",
+    sizeFrom: "M",
+    sizeTo: "XL",
+    isOneSize: false,
     predominantColor: "Celeste",
     price: 72100,
     imageUrl:
       "https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=900&q=80",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=900&q=80"
+    ],
     viewCount: 88,
     inquiryCount: 14,
     createdAt: new Date("2026-04-19")
@@ -136,14 +162,19 @@ export const mockProducts: ProductCardData[] = [
     garmentType: "Buzo",
     gender: "UNISEX",
     productModel: "Oversize",
-    size: "XL",
+    size: "L a XXL",
+    sizeFrom: "L",
+    sizeTo: "XXL",
+    isOneSize: false,
     predominantColor: "Gris",
     price: 51500,
     imageUrl:
       "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=900&q=80",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=900&q=80"
+    ],
     viewCount: 151,
     inquiryCount: 29,
     createdAt: new Date("2026-04-20")
   }
 ];
-

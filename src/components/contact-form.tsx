@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { submitContact, type ContactFormState } from "@/app/actions/contact";
 
 const initialState: ContactFormState = {
@@ -18,7 +18,11 @@ function FieldError({ errors }: { errors?: string[] }) {
 
 export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey?: string }) {
   const [state, formAction, pending] = useActionState(submitContact, initialState);
-  const startedAt = useMemo(() => Date.now().toString(), []);
+  const [startedAt, setStartedAt] = useState("");
+
+  useEffect(() => {
+    setStartedAt(Date.now().toString());
+  }, []);
 
   return (
     <form action={formAction} className="contact-form" noValidate>
@@ -70,4 +74,3 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey?: string })
     </form>
   );
 }
-

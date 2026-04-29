@@ -1,16 +1,34 @@
 import { prisma } from "@/lib/prisma";
+import {
+  getCatalogProductsFromStore,
+  getHomeDataFromStore,
+  getProductBySlugFromStore
+} from "@/lib/dev-store";
 import { normalizeText } from "@/lib/format";
 import {
   mockHeroBanners,
   mockProducts,
   mockSecondaryBanners
 } from "@/lib/mock-data";
+import { buildSizeLabel, collectFacetSizes, productMatchesSize } from "@/lib/product-size";
 import type {
   BannerData,
   CatalogFacets,
   CatalogFilters,
   ProductCardData
 } from "@/lib/types";
+
+function extractImageUrls(imageUrls: unknown, imageUrl: string | null) {
+  const urlsFromJson = Array.isArray(imageUrls)
+    ? imageUrls.filter((value): value is string => typeof value === "string" && value.length > 0)
+    : [];
+
+  if (urlsFromJson.length) {
+    return urlsFromJson;
+  }
+
+  return imageUrl ? [imageUrl] : [];
+}
 
 function mapProduct(product: {
   id: string;
@@ -21,28 +39,61 @@ function mapProduct(product: {
   gender: ProductCardData["gender"];
   productModel: string | null;
   size: string;
+  sizeFrom?: string | null;
+  sizeTo?: string | null;
+  isOneSize?: boolean;
   predominantColor: string;
   price: { toString(): string } | number | null;
   imageUrl: string | null;
+  imageUrls?: unknown;
   createdAt: Date;
   viewCount: number;
   inquiryCount: number;
 }): ProductCardData {
+  const imageUrls = extractImageUrls(product.imageUrls, product.imageUrl);
+  const sizeFrom = product.sizeFrom || product.size || null;
+  const isOneSize = Boolean(product.isOneSize);
+  const sizeTo = isOneSize ? null : product.sizeTo || sizeFrom;
+
   return {
     ...product,
+    size: sizeFrom
+      ? buildSizeLabel({
+          isOneSize,
+          sizeFrom,
+          sizeTo
+        })
+      : product.size,
+    sizeFrom,
+    sizeTo,
+    isOneSize,
+    imageUrl: imageUrls[0] || null,
+    imageUrls,
     price: product.price === null ? null : Number(product.price.toString())
   };
 }
 
-function mapBanner(banner: BannerData): BannerData {
-  return banner;
+function mapBanner(banner: {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  imageUrl: string;
+  placement: BannerData["placement"];
+}): BannerData {
+  return {
+    id: banner.id,
+    title: banner.title,
+    subtitle: banner.subtitle,
+    imageUrl: banner.imageUrl,
+    placement: banner.placement
+  };
 }
 
 function getMockFacets(products: ProductCardData[]): CatalogFacets {
   return {
     types: [...new Set(products.map((product) => product.garmentType))].sort(),
     genders: [...new Set(products.map((product) => product.gender))].sort(),
-    sizes: [...new Set(products.map((product) => product.size))].sort(),
+    sizes: collectFacetSizes(products),
     colors: [...new Set(products.map((product) => product.predominantColor))].sort()
   };
 }
@@ -69,7 +120,7 @@ function filterMockProducts(filters: CatalogFilters) {
       matchesSearch &&
       (!filters.type || product.garmentType === filters.type) &&
       (!filters.gender || product.gender === filters.gender) &&
-      (!filters.size || product.size === filters.size) &&
+      productMatchesSize(product, filters.size) &&
       (!filters.color || product.predominantColor === filters.color)
     );
   });
@@ -77,20 +128,24 @@ function filterMockProducts(filters: CatalogFilters) {
 
 export async function getHomeData() {
   if (!prisma) {
-    return {
-      heroBanners: mockHeroBanners,
-      secondaryBanners: mockSecondaryBanners,
-      recentProducts: [...mockProducts].sort(
-        (a, b) =>
-          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-      ),
-      mostConsultedProducts: [...mockProducts].sort(
-        (a, b) => (b.inquiryCount || 0) - (a.inquiryCount || 0)
-      ),
-      mostViewedProducts: [...mockProducts].sort(
-        (a, b) => (b.viewCount || 0) - (a.viewCount || 0)
-      )
-    };
+    try {
+      return await getHomeDataFromStore();
+    } catch {
+      return {
+        heroBanners: mockHeroBanners,
+        secondaryBanners: mockSecondaryBanners,
+        recentProducts: [...mockProducts].sort(
+          (a, b) =>
+            new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        ),
+        mostConsultedProducts: [...mockProducts].sort(
+          (a, b) => (b.inquiryCount || 0) - (a.inquiryCount || 0)
+        ),
+        mostViewedProducts: [...mockProducts].sort(
+          (a, b) => (b.viewCount || 0) - (a.viewCount || 0)
+        )
+      };
+    }
   }
 
   const now = new Date();
@@ -139,12 +194,16 @@ export async function getHomeData() {
 
 export async function getCatalogProducts(filters: CatalogFilters) {
   if (!prisma) {
-    const filteredProducts = filterMockProducts(filters);
+    try {
+      return await getCatalogProductsFromStore(filters);
+    } catch {
+      const filteredProducts = filterMockProducts(filters);
 
-    return {
-      products: filteredProducts,
-      facets: getMockFacets(mockProducts)
-    };
+      return {
+        products: filteredProducts,
+        facets: getMockFacets(mockProducts)
+      };
+    }
   }
 
   const products = await prisma.product.findMany({
@@ -153,7 +212,6 @@ export async function getCatalogProducts(filters: CatalogFilters) {
       isAvailable: true,
       ...(filters.type ? { garmentType: filters.type } : {}),
       ...(filters.gender ? { gender: filters.gender as ProductCardData["gender"] } : {}),
-      ...(filters.size ? { size: filters.size } : {}),
       ...(filters.color ? { predominantColor: filters.color } : {}),
       ...(filters.q
         ? {
@@ -168,25 +226,30 @@ export async function getCatalogProducts(filters: CatalogFilters) {
         : {})
     },
     orderBy: { createdAt: "desc" },
-    take: 60
+    take: 120
   });
 
+  const activeProducts = products.map(mapProduct);
+  const filteredProducts = activeProducts.filter((product) => productMatchesSize(product, filters.size));
   const facetProducts = await prisma.product.findMany({
     where: { status: "ACTIVE", isAvailable: true },
     select: {
       garmentType: true,
       gender: true,
       size: true,
+      sizeFrom: true,
+      sizeTo: true,
+      isOneSize: true,
       predominantColor: true
     }
   });
 
   return {
-    products: products.map(mapProduct),
+    products: filteredProducts.slice(0, 60),
     facets: {
       types: [...new Set(facetProducts.map((product) => product.garmentType))].sort(),
       genders: [...new Set(facetProducts.map((product) => product.gender))].sort(),
-      sizes: [...new Set(facetProducts.map((product) => product.size))].sort(),
+      sizes: collectFacetSizes(facetProducts),
       colors: [...new Set(facetProducts.map((product) => product.predominantColor))].sort()
     }
   };
@@ -197,7 +260,11 @@ export async function getProductBySlug(
   options: { incrementView?: boolean } = { incrementView: true }
 ) {
   if (!prisma) {
-    return mockProducts.find((product) => product.slug === slug) ?? null;
+    try {
+      return await getProductBySlugFromStore(slug, options);
+    } catch {
+      return mockProducts.find((product) => product.slug === slug) ?? null;
+    }
   }
 
   const product = await prisma.product.findUnique({

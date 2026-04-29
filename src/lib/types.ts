@@ -10,9 +10,13 @@ export type ProductCardData = {
   gender: Gender;
   productModel?: string | null;
   size: string;
+  sizeFrom?: string | null;
+  sizeTo?: string | null;
+  isOneSize?: boolean;
   predominantColor: string;
   price?: number | null;
   imageUrl?: string | null;
+  imageUrls?: string[];
   createdAt?: Date | string;
   viewCount?: number;
   inquiryCount?: number;
@@ -23,7 +27,6 @@ export type BannerData = {
   title: string;
   subtitle?: string | null;
   imageUrl: string;
-  targetUrl?: string | null;
   placement: BannerPlacement;
 };
 
@@ -41,4 +44,3 @@ export type CatalogFacets = {
   sizes: string[];
   colors: string[];
 };
-

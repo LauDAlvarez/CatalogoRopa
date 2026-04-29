@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { WhatsappFloat } from "@/components/whatsapp-float";
 import { siteConfig } from "@/lib/site-config";
 import "./globals.css";
 
@@ -33,9 +34,9 @@ export default function RootLayout({
         ) : null}
         <SiteHeader />
         {children}
+        <WhatsappFloat />
         <SiteFooter />
       </body>
     </html>
   );
 }
-

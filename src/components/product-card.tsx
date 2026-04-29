@@ -4,12 +4,17 @@ import type { ProductCardData } from "@/lib/types";
 
 export function ProductCard({ product }: { product: ProductCardData }) {
   const price = formatPrice(product.price);
+  const primaryImage = product.imageUrls?.[0] || product.imageUrl;
+  const imageCount = product.imageUrls?.length || (primaryImage ? 1 : 0);
 
   return (
     <article className="product-card">
       <Link href={`/catalogo/${product.slug}`} className="product-image-link">
-        {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.name} className="product-image" loading="lazy" />
+        {primaryImage ? (
+          <>
+            <img src={primaryImage} alt={product.name} className="product-image" loading="lazy" />
+            {imageCount > 1 ? <span className="product-image-count">{imageCount} fotos</span> : null}
+          </>
         ) : (
           <div className="product-image product-image-empty" aria-hidden="true" />
         )}

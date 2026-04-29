@@ -3,6 +3,10 @@
 import crypto from "node:crypto";
 import { headers } from "next/headers";
 import { z } from "zod";
+import {
+  countRecentMessagesByIpHash,
+  createContactMessage
+} from "@/lib/dev-store";
 import { prisma } from "@/lib/prisma";
 
 export type ContactFormState = {
@@ -204,11 +208,34 @@ export async function submitContact(
         userAgent: headerStore.get("user-agent")?.slice(0, 240)
       }
     });
-  } else if (!passesFallbackRateLimit(ipHash)) {
-    return {
-      status: "error",
-      message: "Recibimos varios mensajes desde tu conexion. Intenta mas tarde."
-    };
+  } else {
+    const recentCount = await countRecentMessagesByIpHash(
+      ipHash,
+      new Date(Date.now() - 60 * 60 * 1000)
+    ).catch(() => undefined);
+
+    if (recentCount !== undefined) {
+      if (recentCount >= maxPerHour) {
+        return {
+          status: "error",
+          message: "Recibimos varios mensajes desde tu conexion. Intenta mas tarde."
+        };
+      }
+
+      await createContactMessage({
+        firstName: parsed.data.firstName,
+        lastName: parsed.data.lastName,
+        email: parsed.data.email,
+        comment: parsed.data.comment,
+        ipHash,
+        userAgent: headerStore.get("user-agent")?.slice(0, 240) || null
+      });
+    } else if (!passesFallbackRateLimit(ipHash)) {
+      return {
+        status: "error",
+        message: "Recibimos varios mensajes desde tu conexion. Intenta mas tarde."
+      };
+    }
   }
 
   return {
@@ -216,4 +243,3 @@ export async function submitContact(
     message: "Gracias. Recibimos tu mensaje."
   };
 }
-

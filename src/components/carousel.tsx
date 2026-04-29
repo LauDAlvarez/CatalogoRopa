@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { BannerData } from "@/lib/types";
 
@@ -47,22 +46,13 @@ export function Carousel({ banners, variant = "hero", label }: CarouselProps) {
         <p className="eyebrow">{variant === "hero" ? "Catalogo de temporada" : "Promociones"}</p>
         <h1>{activeBanner.title}</h1>
         {activeBanner.subtitle ? <p>{activeBanner.subtitle}</p> : null}
-        {activeBanner.targetUrl ? (
-          <span className="button button-light">Ver mas</span>
-        ) : null}
       </div>
     </>
   );
 
   return (
     <section className={`carousel carousel-${variant}`} aria-label={label}>
-      {activeBanner.targetUrl ? (
-        <Link href={activeBanner.targetUrl} className="carousel-link">
-          {content}
-        </Link>
-      ) : (
-        content
-      )}
+      {content}
 
       {safeBanners.length > 1 ? (
         <div className="carousel-controls" aria-label="Controles del carrusel">

@@ -5,10 +5,23 @@ const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
+function isPlaceholderDatabaseUrl(databaseUrl: string) {
+  return (
+    databaseUrl.includes("USUARIO_DB") ||
+    databaseUrl.includes("PASSWORD_DB") ||
+    databaseUrl.includes("HOST_DB") ||
+    databaseUrl.includes("usuario:password@host")
+  );
+}
+
 function createPrismaClient() {
   const databaseUrl = process.env.DATABASE_URL;
 
   if (!databaseUrl || databaseUrl.trim().length === 0) {
+    return null;
+  }
+
+  if (isPlaceholderDatabaseUrl(databaseUrl)) {
     return null;
   }
 
