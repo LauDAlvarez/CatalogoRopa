@@ -44,7 +44,9 @@ export function Carousel({ banners, variant = "hero", label }: CarouselProps) {
       <div className="carousel-shade" />
       <div className="container carousel-content">
         <p className="eyebrow">{variant === "hero" ? "Catalogo de temporada" : "Promociones"}</p>
-        <h1>{activeBanner.title}</h1>
+        <h1 style={activeBanner.titleColor ? { color: activeBanner.titleColor } : undefined}>
+          {activeBanner.title}
+        </h1>
         {activeBanner.subtitle ? <p>{activeBanner.subtitle}</p> : null}
       </div>
     </>

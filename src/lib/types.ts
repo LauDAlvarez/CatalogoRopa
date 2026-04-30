@@ -25,6 +25,7 @@ export type ProductCardData = {
 export type BannerData = {
   id: string;
   title: string;
+  titleColor?: string | null;
   subtitle?: string | null;
   imageUrl: string;
   placement: BannerPlacement;

@@ -10,6 +10,7 @@ import {
   mockProducts,
   mockSecondaryBanners
 } from "@/lib/mock-data";
+import { collectFacetColors, productMatchesColor } from "@/lib/product-colors";
 import { buildSizeLabel, collectFacetSizes, productMatchesSize } from "@/lib/product-size";
 import type {
   BannerData,
@@ -76,6 +77,7 @@ function mapProduct(product: {
 function mapBanner(banner: {
   id: string;
   title: string;
+  titleColor?: string | null;
   subtitle: string | null;
   imageUrl: string;
   placement: BannerData["placement"];
@@ -83,6 +85,7 @@ function mapBanner(banner: {
   return {
     id: banner.id,
     title: banner.title,
+    titleColor: banner.titleColor || null,
     subtitle: banner.subtitle,
     imageUrl: banner.imageUrl,
     placement: banner.placement
@@ -94,7 +97,7 @@ function getMockFacets(products: ProductCardData[]): CatalogFacets {
     types: [...new Set(products.map((product) => product.garmentType))].sort(),
     genders: [...new Set(products.map((product) => product.gender))].sort(),
     sizes: collectFacetSizes(products),
-    colors: [...new Set(products.map((product) => product.predominantColor))].sort()
+    colors: collectFacetColors(products)
   };
 }
 
@@ -121,7 +124,7 @@ function filterMockProducts(filters: CatalogFilters) {
       (!filters.type || product.garmentType === filters.type) &&
       (!filters.gender || product.gender === filters.gender) &&
       productMatchesSize(product, filters.size) &&
-      (!filters.color || product.predominantColor === filters.color)
+      productMatchesColor(product, filters.color)
     );
   });
 }
@@ -212,7 +215,6 @@ export async function getCatalogProducts(filters: CatalogFilters) {
       isAvailable: true,
       ...(filters.type ? { garmentType: filters.type } : {}),
       ...(filters.gender ? { gender: filters.gender as ProductCardData["gender"] } : {}),
-      ...(filters.color ? { predominantColor: filters.color } : {}),
       ...(filters.q
         ? {
             OR: [
@@ -230,7 +232,9 @@ export async function getCatalogProducts(filters: CatalogFilters) {
   });
 
   const activeProducts = products.map(mapProduct);
-  const filteredProducts = activeProducts.filter((product) => productMatchesSize(product, filters.size));
+  const filteredProducts = activeProducts.filter(
+    (product) => productMatchesSize(product, filters.size) && productMatchesColor(product, filters.color)
+  );
   const facetProducts = await prisma.product.findMany({
     where: { status: "ACTIVE", isAvailable: true },
     select: {
@@ -250,7 +254,7 @@ export async function getCatalogProducts(filters: CatalogFilters) {
       types: [...new Set(facetProducts.map((product) => product.garmentType))].sort(),
       genders: [...new Set(facetProducts.map((product) => product.gender))].sort(),
       sizes: collectFacetSizes(facetProducts),
-      colors: [...new Set(facetProducts.map((product) => product.predominantColor))].sort()
+      colors: collectFacetColors(facetProducts)
     }
   };
 }

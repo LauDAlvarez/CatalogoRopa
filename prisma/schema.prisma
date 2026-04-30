@@ -67,6 +67,7 @@ model Product {
 model Banner {
   id          String          @id @default(cuid())
   title       String
+  titleColor  String?
   subtitle    String?
   imageUrl    String
   targetUrl   String?

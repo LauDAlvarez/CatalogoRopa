@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { normalizeText } from "@/lib/format";
+import { collectFacetColors, productMatchesColor } from "@/lib/product-colors";
 import { collectFacetSizes, productMatchesSize } from "@/lib/product-size";
 import type { BannerData, CatalogFacets, CatalogFilters, ProductCardData } from "@/lib/types";
 
@@ -147,7 +148,7 @@ function getFacets(products: ProductCardData[]): CatalogFacets {
     types: [...new Set(products.map((product) => product.garmentType))].sort(),
     genders: [...new Set(products.map((product) => product.gender))].sort(),
     sizes: collectFacetSizes(products),
-    colors: [...new Set(products.map((product) => product.predominantColor))].sort()
+    colors: collectFacetColors(products)
   };
 }
 
@@ -174,7 +175,7 @@ function filterProducts(products: ProductCardData[], filters: CatalogFilters) {
       (!filters.type || product.garmentType === filters.type) &&
       (!filters.gender || product.gender === filters.gender) &&
       productMatchesSize(product, filters.size) &&
-      (!filters.color || product.predominantColor === filters.color)
+      productMatchesColor(product, filters.color)
     );
   });
 }
