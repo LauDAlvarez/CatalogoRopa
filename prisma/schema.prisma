@@ -69,6 +69,7 @@ model Banner {
   title       String
   titleColor  String?
   subtitle    String?
+  subtitleColor String?
   imageUrl    String
   targetUrl   String?
   placement   BannerPlacement

@@ -5,6 +5,13 @@ export const siteConfig = {
   whatsappMessage:
     process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE ||
     "Hola, quiero consultar por los productos del catalogo.",
+  whatsappProductMessage:
+    process.env.NEXT_PUBLIC_WHATSAPP_PRODUCT_MESSAGE ||
+    "Hola, quiero consultar por {{nombre}}. Tipo: {{tipo.producto}}. Modelo: {{tipo.modelo}}. Talle: {{talle}}. Color: {{color}}.",
+  whatsappFloatCta:
+    process.env.NEXT_PUBLIC_WHATSAPP_FLOAT_CTA || "Escribinos",
+  whatsappProductCta:
+    process.env.NEXT_PUBLIC_WHATSAPP_PRODUCT_CTA || "Consultar disponibilidad",
   nav: [
     { label: "Inicio", href: "/" },
     { label: "Nosotros", href: "/#nosotros" },

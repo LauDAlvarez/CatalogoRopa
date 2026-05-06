@@ -27,6 +27,7 @@ export type BannerData = {
   title: string;
   titleColor?: string | null;
   subtitle?: string | null;
+  subtitleColor?: string | null;
   imageUrl: string;
   placement: BannerPlacement;
 };

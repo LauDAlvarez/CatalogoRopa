@@ -47,7 +47,11 @@ export function Carousel({ banners, variant = "hero", label }: CarouselProps) {
         <h1 style={activeBanner.titleColor ? { color: activeBanner.titleColor } : undefined}>
           {activeBanner.title}
         </h1>
-        {activeBanner.subtitle ? <p>{activeBanner.subtitle}</p> : null}
+        {activeBanner.subtitle ? (
+          <p style={activeBanner.subtitleColor ? { color: activeBanner.subtitleColor } : undefined}>
+            {activeBanner.subtitle}
+          </p>
+        ) : null}
       </div>
     </>
   );

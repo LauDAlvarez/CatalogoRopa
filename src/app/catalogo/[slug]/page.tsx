@@ -4,6 +4,13 @@ import { notFound } from "next/navigation";
 import { ProductGallery } from "@/components/product-gallery";
 import { formatPrice } from "@/lib/format";
 import { getProductBySlug } from "@/lib/catalog-data";
+import { siteConfig } from "@/lib/site-config";
+import { getWhatsappBubbleConfig } from "@/lib/whatsapp-config";
+import {
+  buildWhatsappUrl,
+  getProductStockLabel,
+  renderProductWhatsappMessage
+} from "@/lib/whatsapp";
 
 type ProductPageProps = {
   params: Promise<{ slug: string }>;
@@ -34,16 +41,21 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   const price = formatPrice(product.price);
+  const whatsappSettings = await getWhatsappBubbleConfig();
   const galleryImages = product.imageUrls?.filter(Boolean)?.length
     ? product.imageUrls.filter(Boolean)
     : product.imageUrl
       ? [product.imageUrl]
       : [];
-  const stockLabel = product.isOneSize
-    ? `Talle unico en ${product.sizeFrom || product.size}`
-    : product.sizeFrom && product.sizeTo && product.sizeFrom !== product.sizeTo
-      ? `Stock disponible del ${product.sizeFrom} al ${product.sizeTo}`
-      : `Stock disponible en ${product.size}`;
+  const stockLabel = getProductStockLabel(product);
+  const productMessageTemplate =
+    whatsappSettings.productMessage.trim() ||
+    whatsappSettings.message.trim() ||
+    siteConfig.whatsappProductMessage;
+  const productWhatsappUrl = buildWhatsappUrl(
+    whatsappSettings.phone,
+    renderProductWhatsappMessage(productMessageTemplate, product)
+  );
 
   return (
     <main className="product-detail-page">
@@ -87,10 +99,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
           {price ? <p className="detail-price">{price}</p> : null}
           <Link
-            href={`/#contacto`}
+            href={productWhatsappUrl || "/#contacto"}
             className="button"
+            target={productWhatsappUrl ? "_blank" : undefined}
+            rel={productWhatsappUrl ? "noreferrer" : undefined}
           >
-            Consultar disponibilidad
+            {whatsappSettings.productCta}
           </Link>
         </div>
       </section>

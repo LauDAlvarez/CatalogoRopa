@@ -31,6 +31,7 @@ type ProductRecord = ProductCardData & {
 
 type BannerRecord = BannerData & {
   subtitle: string | null;
+  subtitleColor?: string | null;
   targetUrl: string | null;
   placement: BannerPlacement;
   sortOrder: number;
@@ -56,6 +57,9 @@ type ContactMessageRecord = {
 type WhatsappSettingsRecord = {
   phone: string;
   message: string;
+  productMessage?: string;
+  bubbleLabel?: string;
+  productCta?: string;
   updatedAt: string;
 };
 
@@ -103,6 +107,18 @@ async function readStore(): Promise<StoreRecord> {
           ? {
               phone: parsed.whatsappSettings.phone,
               message: parsed.whatsappSettings.message,
+              productMessage:
+                typeof parsed.whatsappSettings.productMessage === "string"
+                  ? parsed.whatsappSettings.productMessage
+                  : "",
+              bubbleLabel:
+                typeof parsed.whatsappSettings.bubbleLabel === "string"
+                  ? parsed.whatsappSettings.bubbleLabel
+                  : "",
+              productCta:
+                typeof parsed.whatsappSettings.productCta === "string"
+                  ? parsed.whatsappSettings.productCta
+                  : "",
               updatedAt:
                 typeof parsed.whatsappSettings.updatedAt === "string"
                   ? parsed.whatsappSettings.updatedAt

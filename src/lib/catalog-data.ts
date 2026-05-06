@@ -79,6 +79,7 @@ function mapBanner(banner: {
   title: string;
   titleColor?: string | null;
   subtitle: string | null;
+  subtitleColor?: string | null;
   imageUrl: string;
   placement: BannerData["placement"];
 }): BannerData {
@@ -87,6 +88,7 @@ function mapBanner(banner: {
     title: banner.title,
     titleColor: banner.titleColor || null,
     subtitle: banner.subtitle,
+    subtitleColor: banner.subtitleColor || null,
     imageUrl: banner.imageUrl,
     placement: banner.placement
   };
