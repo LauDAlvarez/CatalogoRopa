@@ -1,6 +1,26 @@
+function normalizeSiteUrl(value?: string) {
+  const rawValue = value?.trim();
+
+  if (!rawValue) {
+    return "http://localhost:3000";
+  }
+
+  const withProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(rawValue)
+    ? rawValue
+    : /^(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(rawValue)
+      ? `http://${rawValue}`
+      : `https://${rawValue}`;
+
+  try {
+    return new URL(withProtocol).toString();
+  } catch {
+    return "http://localhost:3000";
+  }
+}
+
 export const siteConfig = {
   brandName: process.env.NEXT_PUBLIC_BRAND_NAME || "American Sport",
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  siteUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
   whatsappPhone: process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "",
   whatsappMessage:
     process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE ||

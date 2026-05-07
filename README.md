@@ -13,7 +13,7 @@ Sitio publico del catalogo de ropa.
 
 1. Copia `.env.example` a `.env`.
 2. Configura `DATABASE_URL` apuntando a la misma base que `catalogo-admin`.
-3. Configura `NEXT_PUBLIC_SITE_URL` con el dominio final.
+3. Configura `NEXT_PUBLIC_SITE_URL` con el dominio final, incluyendo protocolo, por ejemplo `https://catalogo.betadevstudio.com`.
 4. Configura el numero de WhatsApp y, si quieres, Cloudflare Turnstile.
 5. Ejecuta:
 
