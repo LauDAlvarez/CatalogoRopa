@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.siteUrl),
   icons: {
     icon: "/asset/logoamercansport-black.png",
-    shortcut: "/asset/logoamercansport-black.png",
+    shortcut: "/asset/logoamercansport.jpg",
     apple: "/asset/logoamercansport-black.png"
   }
 };
