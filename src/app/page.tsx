@@ -4,7 +4,7 @@ import { ProductSection } from "@/components/product-section";
 import { getHomeData } from "@/lib/catalog-data";
 import { siteConfig } from "@/lib/site-config";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export default async function Home() {
   const {
@@ -87,11 +87,10 @@ export default async function Home() {
         <div className="container contact-grid">
           <div>
             <p className="eyebrow">Contacto</p>
-            <h2>Dejanos tu consulta</h2>
+            <h2>Escribinos por WhatsApp</h2>
             <p>
-              Completa tus datos y contanos que prenda te interesa. El formulario incluye
-              controles anti-spam y puede reforzarse con Cloudflare Turnstile desde las
-              variables de entorno.
+              Completa tus datos y te abrimos WhatsApp con la consulta armada. El formulario
+              limita hasta 3 envios por hora desde la misma conexion.
             </p>
           </div>
           <ContactForm turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />

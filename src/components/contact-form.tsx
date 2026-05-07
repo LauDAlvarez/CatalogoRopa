@@ -24,6 +24,12 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey?: string })
     setStartedAt(Date.now().toString());
   }, []);
 
+  useEffect(() => {
+    if (state.status === "success" && state.redirectUrl) {
+      window.location.assign(state.redirectUrl);
+    }
+  }, [state.redirectUrl, state.status]);
+
   return (
     <form action={formAction} className="contact-form" noValidate>
       <input type="hidden" name="startedAt" value={startedAt} />
@@ -63,7 +69,7 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey?: string })
 
       <div className="form-footer">
         <button type="submit" className="button" disabled={pending}>
-          {pending ? "Enviando..." : "Enviar consulta"}
+          {pending ? "Preparando WhatsApp..." : "Enviar por WhatsApp"}
         </button>
         {state.message ? (
           <p className={`form-status ${state.status === "success" ? "success" : "error"}`}>

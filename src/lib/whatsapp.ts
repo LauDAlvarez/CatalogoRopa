@@ -22,6 +22,13 @@ type ProductWhatsappTemplateInput = Pick<
   | "price"
 >;
 
+type ContactWhatsappTemplateInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  comment: string;
+};
+
 export function buildWhatsappUrl(phoneValue: string, messageValue: string) {
   const phone = phoneValue.replace(/\D/g, "");
 
@@ -95,6 +102,25 @@ export function renderProductWhatsappMessage(
       return token in values ? values[token as keyof typeof values] : match;
     })
     .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+export function renderContactWhatsappMessage(
+  introMessage: string,
+  contact: ContactWhatsappTemplateInput
+) {
+  const intro = introMessage.trim() || "Hola, quiero hacer una consulta desde el sitio.";
+
+  return [
+    intro,
+    `Nombre: ${contact.firstName} ${contact.lastName}`.trim(),
+    `Email: ${contact.email}`,
+    "Consulta:",
+    contact.comment.trim()
+  ]
+    .filter(Boolean)
+    .join("\n\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }

@@ -1,5 +1,6 @@
-import { unstable_noStore as noStore } from "next/cache";
+import { unstable_cache as cache } from "next/cache";
 import { getWhatsappSettingsFromStore } from "@/lib/dev-store";
+import { prisma } from "@/lib/prisma";
 import { siteConfig } from "@/lib/site-config";
 
 export type WhatsappBubbleConfig = {
@@ -10,32 +11,66 @@ export type WhatsappBubbleConfig = {
   productCta: string;
 };
 
+const WHATSAPP_SETTINGS_ID = "default";
+const WHATSAPP_SETTINGS_REVALIDATE_SECONDS = 60;
+
+function mapWhatsappSettings(settings: {
+  phone: string;
+  message: string;
+  productMessage?: string | null;
+  bubbleLabel?: string | null;
+  productCta?: string | null;
+}): WhatsappBubbleConfig {
+  return {
+    phone: settings.phone,
+    message: settings.message,
+    productMessage:
+      typeof settings.productMessage === "string"
+        ? settings.productMessage
+        : siteConfig.whatsappProductMessage,
+    bubbleLabel:
+      typeof settings.bubbleLabel === "string" && settings.bubbleLabel.trim()
+        ? settings.bubbleLabel
+        : siteConfig.whatsappFloatCta,
+    productCta:
+      typeof settings.productCta === "string" && settings.productCta.trim()
+        ? settings.productCta
+        : siteConfig.whatsappProductCta
+  };
+}
+
+const getCachedWhatsappSettings = cache(
+  async (): Promise<WhatsappBubbleConfig | null> => {
+    if (!prisma) {
+      return null;
+    }
+
+    const settings = await prisma.whatsappSettings.findUnique({
+      where: { id: WHATSAPP_SETTINGS_ID }
+    });
+
+    return settings ? mapWhatsappSettings(settings) : null;
+  },
+  ["whatsapp-settings"],
+  { revalidate: WHATSAPP_SETTINGS_REVALIDATE_SECONDS }
+);
+
 export async function getWhatsappBubbleConfig(): Promise<WhatsappBubbleConfig> {
-  noStore();
+  if (prisma) {
+    const settings = await getCachedWhatsappSettings();
+
+    if (settings) {
+      return settings;
+    }
+  }
 
   try {
     const storedSettings = await getWhatsappSettingsFromStore();
 
     if (storedSettings) {
-      return {
-        phone: storedSettings.phone,
-        message: storedSettings.message,
-        productMessage:
-          typeof storedSettings.productMessage === "string"
-            ? storedSettings.productMessage
-            : siteConfig.whatsappProductMessage,
-        bubbleLabel:
-          typeof storedSettings.bubbleLabel === "string" && storedSettings.bubbleLabel.trim()
-            ? storedSettings.bubbleLabel
-            : siteConfig.whatsappFloatCta,
-        productCta:
-          typeof storedSettings.productCta === "string" && storedSettings.productCta.trim()
-            ? storedSettings.productCta
-            : siteConfig.whatsappProductCta
-      };
+      return mapWhatsappSettings(storedSettings);
     }
   } catch {
-    // Fallback a variables de entorno si el archivo compartido no esta disponible.
   }
 
   return {

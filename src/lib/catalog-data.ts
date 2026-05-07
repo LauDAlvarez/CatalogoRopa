@@ -1,3 +1,4 @@
+import { unstable_cache as cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import {
   getCatalogProductsFromStore,
@@ -18,6 +19,70 @@ import type {
   CatalogFilters,
   ProductCardData
 } from "@/lib/types";
+
+const HOME_REVALIDATE_SECONDS = 120;
+const CATALOG_REVALIDATE_SECONDS = 180;
+const PRODUCT_REVALIDATE_SECONDS = 300;
+const FACETS_REVALIDATE_SECONDS = 600;
+const allowedGenders = new Set<ProductCardData["gender"]>([
+  "MUJER",
+  "HOMBRE",
+  "UNISEX",
+  "NINOS"
+]);
+
+const bannerSelect = {
+  id: true,
+  title: true,
+  titleColor: true,
+  subtitle: true,
+  subtitleColor: true,
+  imageUrl: true,
+  placement: true
+};
+
+const productCardSelect = {
+  id: true,
+  name: true,
+  slug: true,
+  description: true,
+  garmentType: true,
+  gender: true,
+  productModel: true,
+  size: true,
+  sizeFrom: true,
+  sizeTo: true,
+  isOneSize: true,
+  predominantColor: true,
+  price: true,
+  imageUrl: true,
+  imageUrls: true,
+  createdAt: true,
+  viewCount: true,
+  inquiryCount: true
+};
+
+function normalizeFilterValue(value: string | undefined, maxLength: number) {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  return trimmed.slice(0, maxLength);
+}
+
+function normalizeCatalogFilters(filters: CatalogFilters): CatalogFilters {
+  const gender = normalizeFilterValue(filters.gender, 20);
+
+  return {
+    q: normalizeFilterValue(filters.q, 80),
+    type: normalizeFilterValue(filters.type, 80),
+    gender: gender && allowedGenders.has(gender as ProductCardData["gender"]) ? gender : undefined,
+    size: normalizeFilterValue(filters.size, 20),
+    color: normalizeFilterValue(filters.color, 60)
+  };
+}
 
 function extractImageUrls(imageUrls: unknown, imageUrl: string | null) {
   const urlsFromJson = Array.isArray(imageUrls)
@@ -131,6 +196,159 @@ function filterMockProducts(filters: CatalogFilters) {
   });
 }
 
+const getCachedHomeData = cache(
+  async () => {
+    if (!prisma) {
+      throw new Error("Prisma no disponible");
+    }
+
+    const now = new Date();
+    const activeBannerWindow = [
+      { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+      { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }
+    ];
+
+    const [heroBanners, secondaryBanners, recentProducts, mostConsultedProducts, mostViewedProducts] =
+      await Promise.all([
+        prisma.banner.findMany({
+          where: { placement: "HERO", isActive: true, AND: activeBannerWindow },
+          select: bannerSelect,
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+          take: 8
+        }),
+        prisma.banner.findMany({
+          where: { placement: "SECONDARY", isActive: true, AND: activeBannerWindow },
+          select: bannerSelect,
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+          take: 8
+        }),
+        prisma.product.findMany({
+          where: { status: "ACTIVE", isAvailable: true },
+          select: productCardSelect,
+          orderBy: { createdAt: "desc" },
+          take: 8
+        }),
+        prisma.product.findMany({
+          where: { status: "ACTIVE", isAvailable: true },
+          select: productCardSelect,
+          orderBy: { inquiryCount: "desc" },
+          take: 8
+        }),
+        prisma.product.findMany({
+          where: { status: "ACTIVE", isAvailable: true },
+          select: productCardSelect,
+          orderBy: { viewCount: "desc" },
+          take: 8
+        })
+      ]);
+
+    return {
+      heroBanners: heroBanners.map(mapBanner),
+      secondaryBanners: secondaryBanners.map(mapBanner),
+      recentProducts: recentProducts.map(mapProduct),
+      mostConsultedProducts: mostConsultedProducts.map(mapProduct),
+      mostViewedProducts: mostViewedProducts.map(mapProduct)
+    };
+  },
+  ["home-data"],
+  { revalidate: HOME_REVALIDATE_SECONDS }
+);
+
+const getCachedCatalogFacets = cache(
+  async () => {
+    if (!prisma) {
+      throw new Error("Prisma no disponible");
+    }
+
+    const facetProducts = await prisma.product.findMany({
+      where: { status: "ACTIVE", isAvailable: true },
+      select: {
+        garmentType: true,
+        gender: true,
+        size: true,
+        sizeFrom: true,
+        sizeTo: true,
+        isOneSize: true,
+        predominantColor: true
+      }
+    });
+
+    return {
+      types: [...new Set(facetProducts.map((product) => product.garmentType))].sort(),
+      genders: [...new Set(facetProducts.map((product) => product.gender))].sort(),
+      sizes: collectFacetSizes(facetProducts),
+      colors: collectFacetColors(facetProducts)
+    };
+  },
+  ["catalog-facets"],
+  { revalidate: FACETS_REVALIDATE_SECONDS }
+);
+
+const getCachedCatalogProducts = cache(
+  async (filters: CatalogFilters) => {
+    if (!prisma) {
+      throw new Error("Prisma no disponible");
+    }
+
+    const products = await prisma.product.findMany({
+      where: {
+        status: "ACTIVE",
+        isAvailable: true,
+        ...(filters.type ? { garmentType: filters.type } : {}),
+        ...(filters.gender ? { gender: filters.gender as ProductCardData["gender"] } : {}),
+        ...(filters.q
+          ? {
+              OR: [
+                { name: { contains: filters.q } },
+                { description: { contains: filters.q } },
+                { garmentType: { contains: filters.q } },
+                { productModel: { contains: filters.q } },
+                { predominantColor: { contains: filters.q } }
+              ]
+            }
+          : {})
+      },
+      select: productCardSelect,
+      orderBy: { createdAt: "desc" },
+      take: 120
+    });
+
+    const activeProducts = products.map(mapProduct);
+    const filteredProducts = activeProducts.filter(
+      (product) =>
+        productMatchesSize(product, filters.size) && productMatchesColor(product, filters.color)
+    );
+
+    return {
+      products: filteredProducts.slice(0, 60),
+      facets: await getCachedCatalogFacets()
+    };
+  },
+  ["catalog-products"],
+  { revalidate: CATALOG_REVALIDATE_SECONDS }
+);
+
+const getCachedProductBySlug = cache(
+  async (slug: string) => {
+    if (!prisma) {
+      throw new Error("Prisma no disponible");
+    }
+
+    const product = await prisma.product.findFirst({
+      where: {
+        slug,
+        status: "ACTIVE",
+        isAvailable: true
+      },
+      select: productCardSelect
+    });
+
+    return product ? mapProduct(product) : null;
+  },
+  ["product-by-slug"],
+  { revalidate: PRODUCT_REVALIDATE_SECONDS }
+);
+
 export async function getHomeData() {
   if (!prisma) {
     try {
@@ -153,56 +371,17 @@ export async function getHomeData() {
     }
   }
 
-  const now = new Date();
-  const activeBannerWindow = [
-    { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
-    { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }
-  ];
-
-  const [heroBanners, secondaryBanners, recentProducts, mostConsultedProducts, mostViewedProducts] =
-    await Promise.all([
-      prisma.banner.findMany({
-        where: { placement: "HERO", isActive: true, AND: activeBannerWindow },
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-        take: 8
-      }),
-      prisma.banner.findMany({
-        where: { placement: "SECONDARY", isActive: true, AND: activeBannerWindow },
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-        take: 8
-      }),
-      prisma.product.findMany({
-        where: { status: "ACTIVE", isAvailable: true },
-        orderBy: { createdAt: "desc" },
-        take: 8
-      }),
-      prisma.product.findMany({
-        where: { status: "ACTIVE", isAvailable: true },
-        orderBy: { inquiryCount: "desc" },
-        take: 8
-      }),
-      prisma.product.findMany({
-        where: { status: "ACTIVE", isAvailable: true },
-        orderBy: { viewCount: "desc" },
-        take: 8
-      })
-    ]);
-
-  return {
-    heroBanners: heroBanners.map(mapBanner),
-    secondaryBanners: secondaryBanners.map(mapBanner),
-    recentProducts: recentProducts.map(mapProduct),
-    mostConsultedProducts: mostConsultedProducts.map(mapProduct),
-    mostViewedProducts: mostViewedProducts.map(mapProduct)
-  };
+  return getCachedHomeData();
 }
 
 export async function getCatalogProducts(filters: CatalogFilters) {
+  const normalizedFilters = normalizeCatalogFilters(filters);
+
   if (!prisma) {
     try {
-      return await getCatalogProductsFromStore(filters);
+      return await getCatalogProductsFromStore(normalizedFilters);
     } catch {
-      const filteredProducts = filterMockProducts(filters);
+      const filteredProducts = filterMockProducts(normalizedFilters);
 
       return {
         products: filteredProducts,
@@ -211,54 +390,7 @@ export async function getCatalogProducts(filters: CatalogFilters) {
     }
   }
 
-  const products = await prisma.product.findMany({
-    where: {
-      status: "ACTIVE",
-      isAvailable: true,
-      ...(filters.type ? { garmentType: filters.type } : {}),
-      ...(filters.gender ? { gender: filters.gender as ProductCardData["gender"] } : {}),
-      ...(filters.q
-        ? {
-            OR: [
-              { name: { contains: filters.q } },
-              { description: { contains: filters.q } },
-              { garmentType: { contains: filters.q } },
-              { productModel: { contains: filters.q } },
-              { predominantColor: { contains: filters.q } }
-            ]
-          }
-        : {})
-    },
-    orderBy: { createdAt: "desc" },
-    take: 120
-  });
-
-  const activeProducts = products.map(mapProduct);
-  const filteredProducts = activeProducts.filter(
-    (product) => productMatchesSize(product, filters.size) && productMatchesColor(product, filters.color)
-  );
-  const facetProducts = await prisma.product.findMany({
-    where: { status: "ACTIVE", isAvailable: true },
-    select: {
-      garmentType: true,
-      gender: true,
-      size: true,
-      sizeFrom: true,
-      sizeTo: true,
-      isOneSize: true,
-      predominantColor: true
-    }
-  });
-
-  return {
-    products: filteredProducts.slice(0, 60),
-    facets: {
-      types: [...new Set(facetProducts.map((product) => product.garmentType))].sort(),
-      genders: [...new Set(facetProducts.map((product) => product.gender))].sort(),
-      sizes: collectFacetSizes(facetProducts),
-      colors: collectFacetColors(facetProducts)
-    }
-  };
+  return getCachedCatalogProducts(normalizedFilters);
 }
 
 export async function getProductBySlug(
@@ -273,11 +405,9 @@ export async function getProductBySlug(
     }
   }
 
-  const product = await prisma.product.findUnique({
-    where: { slug }
-  });
+  const product = await getCachedProductBySlug(slug);
 
-  if (!product || product.status !== "ACTIVE" || !product.isAvailable) {
+  if (!product) {
     return null;
   }
 
@@ -290,5 +420,5 @@ export async function getProductBySlug(
       .catch(() => undefined);
   }
 
-  return mapProduct(product);
+  return product;
 }

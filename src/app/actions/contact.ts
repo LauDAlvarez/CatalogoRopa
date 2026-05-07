@@ -8,10 +8,13 @@ import {
   createContactMessage
 } from "@/lib/dev-store";
 import { prisma } from "@/lib/prisma";
+import { getWhatsappBubbleConfig } from "@/lib/whatsapp-config";
+import { buildWhatsappUrl, renderContactWhatsappMessage } from "@/lib/whatsapp";
 
 export type ContactFormState = {
   status: "idle" | "success" | "error";
   message: string;
+  redirectUrl?: string;
   fieldErrors?: Record<string, string[]>;
 };
 
@@ -38,10 +41,16 @@ const contactSchema = z.object({
 
 const fallbackRateLimit = new Map<string, { count: number; resetAt: number }>();
 
+function getMaxContactMessagesPerHour() {
+  const configured = Number(process.env.CONTACT_MAX_PER_HOUR || 3);
+  return Number.isFinite(configured) && configured > 0 ? configured : 3;
+}
+
 function getClientIp(headerStore: Headers) {
+  const cfConnectingIp = headerStore.get("cf-connecting-ip");
   const forwardedFor = headerStore.get("x-forwarded-for");
   const realIp = headerStore.get("x-real-ip");
-  return forwardedFor?.split(",")[0]?.trim() || realIp || "unknown";
+  return cfConnectingIp || forwardedFor?.split(",")[0]?.trim() || realIp || "unknown";
 }
 
 function hashIp(ip: string) {
@@ -67,7 +76,7 @@ function passesFallbackRateLimit(key: string) {
     return true;
   }
 
-  if (existing.count >= Number(process.env.CONTACT_MAX_PER_HOUR || 4)) {
+  if (existing.count >= getMaxContactMessagesPerHour()) {
     return false;
   }
 
@@ -172,7 +181,17 @@ export async function submitContact(
 
   const ip = getClientIp(headerStore);
   const ipHash = hashIp(ip);
-  const maxPerHour = Number(process.env.CONTACT_MAX_PER_HOUR || 4);
+  const maxPerHour = getMaxContactMessagesPerHour();
+  const whatsappSettings = await getWhatsappBubbleConfig();
+  const whatsappMessage = renderContactWhatsappMessage(whatsappSettings.message, parsed.data);
+  const whatsappUrl = buildWhatsappUrl(whatsappSettings.phone, whatsappMessage);
+
+  if (!whatsappUrl) {
+    return {
+      status: "error",
+      message: "WhatsApp no esta configurado en este momento. Intenta mas tarde."
+    };
+  }
 
   if (!(await verifyTurnstile(formData.get("cf-turnstile-response"), ip))) {
     return {
@@ -240,6 +259,7 @@ export async function submitContact(
 
   return {
     status: "success",
-    message: "Gracias. Recibimos tu mensaje."
+    message: "Te estamos redirigiendo a WhatsApp.",
+    redirectUrl: whatsappUrl
   };
 }
