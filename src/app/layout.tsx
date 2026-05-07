@@ -13,7 +13,12 @@ export const metadata: Metadata = {
   },
   description:
     "Catalogo online de ropa con prendas disponibles, talles, colores, modelos y contacto.",
-  metadataBase: new URL(siteConfig.siteUrl)
+  metadataBase: new URL(siteConfig.siteUrl),
+  icons: {
+    icon: "/asset/logoamercansport-black.png",
+    shortcut: "/asset/logoamercansport-black.png",
+    apple: "/asset/logoamercansport-black.png"
+  }
 };
 
 export default function RootLayout({

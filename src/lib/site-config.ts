@@ -1,5 +1,5 @@
 export const siteConfig = {
-  brandName: process.env.NEXT_PUBLIC_BRAND_NAME || "Tu Marca",
+  brandName: process.env.NEXT_PUBLIC_BRAND_NAME || "American Sport",
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
   whatsappPhone: process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "",
   whatsappMessage:

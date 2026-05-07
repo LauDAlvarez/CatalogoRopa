@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { siteConfig } from "@/lib/site-config";
 
@@ -9,8 +10,17 @@ export function SiteFooter() {
       <div className="container footer-grid">
         <div>
           <Link href="/" className="brand footer-brand" aria-label={`${siteConfig.brandName} inicio`}>
-            <span className="brand-mark">{siteConfig.brandName.slice(0, 1)}</span>
-            <span>{siteConfig.brandName}</span>
+            <span className="brand-mark">
+              <Image
+                src="/asset/logoamericansport-white.png"
+                alt=""
+                width={512}
+                height={512}
+              />
+            </span>
+            <span className="brand-copy">
+              <span className="brand-name">{siteConfig.brandName}</span>
+            </span>
           </Link>
           <p className="footer-copy">
             Catalogo minimalista de prendas seleccionadas. Disponibilidad sujeta a stock.
@@ -30,4 +40,3 @@ export function SiteFooter() {
     </footer>
   );
 }
-
