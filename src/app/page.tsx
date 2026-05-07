@@ -4,7 +4,7 @@ import { ProductSection } from "@/components/product-section";
 import { getHomeData } from "@/lib/catalog-data";
 import { siteConfig } from "@/lib/site-config";
 
-export const revalidate = 120;
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const {

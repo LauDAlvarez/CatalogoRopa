@@ -57,10 +57,13 @@ const getCachedWhatsappSettings = cache(
 
 export async function getWhatsappBubbleConfig(): Promise<WhatsappBubbleConfig> {
   if (prisma) {
-    const settings = await getCachedWhatsappSettings();
+    try {
+      const settings = await getCachedWhatsappSettings();
 
-    if (settings) {
-      return settings;
+      if (settings) {
+        return settings;
+      }
+    } catch {
     }
   }
 
