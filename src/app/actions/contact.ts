@@ -201,39 +201,16 @@ export async function submitContact(
   }
 
   if (prisma) {
-    const recentCount = await prisma.contactMessage.count({
-      where: {
-        ipHash,
-        createdAt: {
-          gte: new Date(Date.now() - 60 * 60 * 1000)
+    try {
+      const recentCount = await prisma.contactMessage.count({
+        where: {
+          ipHash,
+          createdAt: {
+            gte: new Date(Date.now() - 60 * 60 * 1000)
+          }
         }
-      }
-    });
+      });
 
-    if (recentCount >= maxPerHour) {
-      return {
-        status: "error",
-        message: "Recibimos varios mensajes desde tu conexion. Intenta mas tarde."
-      };
-    }
-
-    await prisma.contactMessage.create({
-      data: {
-        firstName: parsed.data.firstName,
-        lastName: parsed.data.lastName,
-        email: parsed.data.email,
-        comment: parsed.data.comment,
-        ipHash,
-        userAgent: headerStore.get("user-agent")?.slice(0, 240)
-      }
-    });
-  } else {
-    const recentCount = await countRecentMessagesByIpHash(
-      ipHash,
-      new Date(Date.now() - 60 * 60 * 1000)
-    ).catch(() => undefined);
-
-    if (recentCount !== undefined) {
       if (recentCount >= maxPerHour) {
         return {
           status: "error",
@@ -241,20 +218,52 @@ export async function submitContact(
         };
       }
 
-      await createContactMessage({
-        firstName: parsed.data.firstName,
-        lastName: parsed.data.lastName,
-        email: parsed.data.email,
-        comment: parsed.data.comment,
-        ipHash,
-        userAgent: headerStore.get("user-agent")?.slice(0, 240) || null
+      await prisma.contactMessage.create({
+        data: {
+          firstName: parsed.data.firstName,
+          lastName: parsed.data.lastName,
+          email: parsed.data.email,
+          comment: parsed.data.comment,
+          ipHash,
+          userAgent: headerStore.get("user-agent")?.slice(0, 240)
+        }
       });
-    } else if (!passesFallbackRateLimit(ipHash)) {
+
+      return {
+        status: "success",
+        message: "Te estamos redirigiendo a WhatsApp.",
+        redirectUrl: whatsappUrl
+      };
+    } catch {
+    }
+  }
+
+  const recentCount = await countRecentMessagesByIpHash(
+    ipHash,
+    new Date(Date.now() - 60 * 60 * 1000)
+  ).catch(() => undefined);
+
+  if (recentCount !== undefined) {
+    if (recentCount >= maxPerHour) {
       return {
         status: "error",
         message: "Recibimos varios mensajes desde tu conexion. Intenta mas tarde."
       };
     }
+
+    await createContactMessage({
+      firstName: parsed.data.firstName,
+      lastName: parsed.data.lastName,
+      email: parsed.data.email,
+      comment: parsed.data.comment,
+      ipHash,
+      userAgent: headerStore.get("user-agent")?.slice(0, 240) || null
+    });
+  } else if (!passesFallbackRateLimit(ipHash)) {
+    return {
+      status: "error",
+      message: "Recibimos varios mensajes desde tu conexion. Intenta mas tarde."
+    };
   }
 
   return {

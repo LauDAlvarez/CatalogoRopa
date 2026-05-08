@@ -196,6 +196,20 @@ function filterMockProducts(filters: CatalogFilters) {
   });
 }
 
+function getMockHomeData() {
+  return {
+    heroBanners: mockHeroBanners,
+    secondaryBanners: mockSecondaryBanners,
+    recentProducts: [...mockProducts].sort(
+      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    ),
+    mostConsultedProducts: [...mockProducts].sort(
+      (a, b) => (b.inquiryCount || 0) - (a.inquiryCount || 0)
+    ),
+    mostViewedProducts: [...mockProducts].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+  };
+}
+
 const getCachedHomeData = cache(
   async () => {
     if (!prisma) {
@@ -350,75 +364,71 @@ const getCachedProductBySlug = cache(
 );
 
 export async function getHomeData() {
-  if (!prisma) {
+  if (prisma) {
     try {
-      return await getHomeDataFromStore();
+      return await getCachedHomeData();
     } catch {
-      return {
-        heroBanners: mockHeroBanners,
-        secondaryBanners: mockSecondaryBanners,
-        recentProducts: [...mockProducts].sort(
-          (a, b) =>
-            new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-        ),
-        mostConsultedProducts: [...mockProducts].sort(
-          (a, b) => (b.inquiryCount || 0) - (a.inquiryCount || 0)
-        ),
-        mostViewedProducts: [...mockProducts].sort(
-          (a, b) => (b.viewCount || 0) - (a.viewCount || 0)
-        )
-      };
     }
   }
 
-  return getCachedHomeData();
+  try {
+    return await getHomeDataFromStore();
+  } catch {
+    return getMockHomeData();
+  }
 }
 
 export async function getCatalogProducts(filters: CatalogFilters) {
   const normalizedFilters = normalizeCatalogFilters(filters);
 
-  if (!prisma) {
+  if (prisma) {
     try {
-      return await getCatalogProductsFromStore(normalizedFilters);
+      return await getCachedCatalogProducts(normalizedFilters);
     } catch {
-      const filteredProducts = filterMockProducts(normalizedFilters);
-
-      return {
-        products: filteredProducts,
-        facets: getMockFacets(mockProducts)
-      };
     }
   }
 
-  return getCachedCatalogProducts(normalizedFilters);
+  try {
+    return await getCatalogProductsFromStore(normalizedFilters);
+  } catch {
+    const filteredProducts = filterMockProducts(normalizedFilters);
+
+    return {
+      products: filteredProducts,
+      facets: getMockFacets(mockProducts)
+    };
+  }
 }
 
 export async function getProductBySlug(
   slug: string,
   options: { incrementView?: boolean } = { incrementView: true }
 ) {
-  if (!prisma) {
+  if (prisma) {
     try {
-      return await getProductBySlugFromStore(slug, options);
+      const product = await getCachedProductBySlug(slug);
+
+      if (!product) {
+        return null;
+      }
+
+      if (options.incrementView !== false) {
+        prisma.product
+          .update({
+            where: { id: product.id },
+            data: { viewCount: { increment: 1 } }
+          })
+          .catch(() => undefined);
+      }
+
+      return product;
     } catch {
-      return mockProducts.find((product) => product.slug === slug) ?? null;
     }
   }
 
-  const product = await getCachedProductBySlug(slug);
-
-  if (!product) {
-    return null;
+  try {
+    return await getProductBySlugFromStore(slug, options);
+  } catch {
+    return mockProducts.find((product) => product.slug === slug) ?? null;
   }
-
-  if (options.incrementView !== false) {
-    prisma.product
-      .update({
-        where: { id: product.id },
-        data: { viewCount: { increment: 1 } }
-      })
-      .catch(() => undefined);
-  }
-
-  return product;
 }
