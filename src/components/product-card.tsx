@@ -12,7 +12,13 @@ export function ProductCard({ product }: { product: ProductCardData }) {
       <Link href={`/catalogo/${product.slug}`} className="product-image-link">
         {primaryImage ? (
           <>
-            <img src={primaryImage} alt={product.name} className="product-image" loading="lazy" />
+            <img
+              src={primaryImage}
+              alt={product.name}
+              className="product-image"
+              loading="lazy"
+              decoding="async"
+            />
             {imageCount > 1 ? <span className="product-image-count">{imageCount} fotos</span> : null}
           </>
         ) : (

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductGallery } from "@/components/product-gallery";
+import { ProductViewTracker } from "@/components/product-view-tracker";
 import { formatPrice } from "@/lib/format";
 import { getProductBySlug } from "@/lib/catalog-data";
 import { siteConfig } from "@/lib/site-config";
@@ -16,7 +17,7 @@ type ProductPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 600;
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const product = await getProductBySlug(slug, { incrementView: false });
 
   if (!product) {
     notFound();
@@ -61,6 +62,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <main className="product-detail-page">
+      <ProductViewTracker slug={slug} />
       <section className="container product-detail">
         <div className="product-detail-media">
           <ProductGallery images={galleryImages} alt={product.name} />

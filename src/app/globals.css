@@ -381,12 +381,29 @@ img {
   box-shadow: 0 10px 25px rgba(27, 31, 29, 0.05);
 }
 
+.product-card-skeleton {
+  pointer-events: none;
+}
+
 .product-image-link {
   position: relative;
   display: block;
   aspect-ratio: 4 / 5;
   overflow: hidden;
   background: var(--surface-alt);
+}
+
+.product-image-skeleton,
+.carousel-placeholder,
+.contact-form-placeholder,
+.skeleton-line {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0)),
+    linear-gradient(135deg, rgba(85, 117, 99, 0.1), rgba(54, 83, 68, 0.06));
+  background-size:
+    220px 100%,
+    100% 100%;
+  animation: skeleton-shimmer 1.4s linear infinite;
 }
 
 .product-image {
@@ -483,6 +500,41 @@ img {
   padding: 84px 0 0;
 }
 
+.product-row-placeholder {
+  align-items: stretch;
+}
+
+.carousel-placeholder {
+  min-height: 330px;
+}
+
+.skeleton-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 999px;
+}
+
+.skeleton-line-short {
+  width: 42%;
+}
+
+.skeleton-line-heading {
+  width: min(520px, 90%);
+  height: 56px;
+  border-radius: 20px;
+}
+
+.skeleton-line-body {
+  width: min(420px, 72%);
+  height: 18px;
+  border-radius: 999px;
+}
+
 .faq-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -516,6 +568,13 @@ img {
   border-radius: var(--radius);
   background: var(--surface);
   padding: 24px;
+}
+
+.contact-form-placeholder {
+  min-height: 380px;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 700;
 }
 
 .form-grid {
@@ -809,6 +868,20 @@ img {
 .product-detail-info {
   display: grid;
   gap: 22px;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position:
+      -220px 0,
+      0 0;
+  }
+
+  to {
+    background-position:
+      calc(100% + 220px) 0,
+      0 0;
+  }
 }
 
 .stock-detail-note {

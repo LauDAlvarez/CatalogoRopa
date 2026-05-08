@@ -23,7 +23,7 @@ export function ProductGallery({ images, alt }: ProductGalleryProps) {
   return (
     <div className="product-gallery">
       <div className="product-gallery-stage">
-        <img src={activeImage} alt={alt} />
+        <img src={activeImage} alt={alt} loading="eager" decoding="async" />
       </div>
       {safeImages.length > 1 ? (
         <div className="product-gallery-thumbs" aria-label="Galeria de imagenes del producto">
@@ -36,7 +36,7 @@ export function ProductGallery({ images, alt }: ProductGalleryProps) {
               aria-label={`Ver imagen ${index + 1}`}
               aria-pressed={index === activeIndex}
             >
-              <img src={imageUrl} alt="" />
+              <img src={imageUrl} alt="" loading="lazy" decoding="async" />
             </button>
           ))}
         </div>

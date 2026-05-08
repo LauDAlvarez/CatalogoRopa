@@ -1,19 +1,15 @@
-import { Carousel } from "@/components/carousel";
-import { ContactForm } from "@/components/contact-form";
+import { DeferredContactForm } from "@/components/deferred-contact-form";
 import { ProductSection } from "@/components/product-section";
-import { getHomeData } from "@/lib/catalog-data";
+import { Carousel } from "@/components/carousel";
+import { LazyHomeCarousel } from "@/components/lazy-home-carousel";
+import { LazyHomeProductSection } from "@/components/lazy-home-product-section";
+import { getHomePrimaryData } from "@/lib/catalog-data";
 import { siteConfig } from "@/lib/site-config";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function Home() {
-  const {
-    heroBanners,
-    secondaryBanners,
-    recentProducts,
-    mostConsultedProducts,
-    mostViewedProducts
-  } = await getHomeData();
+  const { heroBanners, recentProducts } = await getHomePrimaryData();
 
   return (
     <main>
@@ -38,19 +34,19 @@ export default async function Home() {
         title="Productos recientemente agregados"
         products={recentProducts}
       />
-      <ProductSection
+      <LazyHomeProductSection
         eyebrow="Consultas"
         title="Productos mas consultados"
-        products={mostConsultedProducts}
+        section="most-consulted"
       />
-      <ProductSection
+      <LazyHomeProductSection
         eyebrow="Interes"
         title="Productos mas vistos"
-        products={mostViewedProducts}
+        section="most-viewed"
       />
 
       <div className="section section-secondary-slider">
-        <Carousel banners={secondaryBanners} variant="secondary" label="Banners secundarios" />
+        <LazyHomeCarousel />
       </div>
 
       <section id="faqs" className="faq-section">
@@ -93,7 +89,7 @@ export default async function Home() {
               limita hasta 3 envios por hora desde la misma conexion.
             </p>
           </div>
-          <ContactForm turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
+          <DeferredContactForm turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
         </div>
       </section>
     </main>

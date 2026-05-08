@@ -20,10 +20,10 @@ import type {
   ProductCardData
 } from "@/lib/types";
 
-const HOME_REVALIDATE_SECONDS = 120;
-const CATALOG_REVALIDATE_SECONDS = 180;
-const PRODUCT_REVALIDATE_SECONDS = 300;
-const FACETS_REVALIDATE_SECONDS = 600;
+const HOME_REVALIDATE_SECONDS = 300;
+const CATALOG_REVALIDATE_SECONDS = 300;
+const PRODUCT_REVALIDATE_SECONDS = 600;
+const FACETS_REVALIDATE_SECONDS = 900;
 const allowedGenders = new Set<ProductCardData["gender"]>([
   "MUJER",
   "HOMBRE",
@@ -210,8 +210,8 @@ function getMockHomeData() {
   };
 }
 
-const getCachedHomeData = cache(
-  async () => {
+const getCachedBannersByPlacement = cache(
+  async (placement: BannerData["placement"]) => {
     if (!prisma) {
       throw new Error("Prisma no disponible");
     }
@@ -222,49 +222,42 @@ const getCachedHomeData = cache(
       { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }
     ];
 
-    const [heroBanners, secondaryBanners, recentProducts, mostConsultedProducts, mostViewedProducts] =
-      await Promise.all([
-        prisma.banner.findMany({
-          where: { placement: "HERO", isActive: true, AND: activeBannerWindow },
-          select: bannerSelect,
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-          take: 8
-        }),
-        prisma.banner.findMany({
-          where: { placement: "SECONDARY", isActive: true, AND: activeBannerWindow },
-          select: bannerSelect,
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-          take: 8
-        }),
-        prisma.product.findMany({
-          where: { status: "ACTIVE", isAvailable: true },
-          select: productCardSelect,
-          orderBy: { createdAt: "desc" },
-          take: 8
-        }),
-        prisma.product.findMany({
-          where: { status: "ACTIVE", isAvailable: true },
-          select: productCardSelect,
-          orderBy: { inquiryCount: "desc" },
-          take: 8
-        }),
-        prisma.product.findMany({
-          where: { status: "ACTIVE", isAvailable: true },
-          select: productCardSelect,
-          orderBy: { viewCount: "desc" },
-          take: 8
-        })
-      ]);
+    const banners = await prisma.banner.findMany({
+      where: { placement, isActive: true, AND: activeBannerWindow },
+      select: bannerSelect,
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      take: 8
+    });
 
-    return {
-      heroBanners: heroBanners.map(mapBanner),
-      secondaryBanners: secondaryBanners.map(mapBanner),
-      recentProducts: recentProducts.map(mapProduct),
-      mostConsultedProducts: mostConsultedProducts.map(mapProduct),
-      mostViewedProducts: mostViewedProducts.map(mapProduct)
-    };
+    return banners.map(mapBanner);
   },
-  ["home-data"],
+  ["home-banners-by-placement"],
+  { revalidate: HOME_REVALIDATE_SECONDS }
+);
+
+const getCachedProductsByRanking = cache(
+  async (ranking: "recent" | "most-consulted" | "most-viewed") => {
+    if (!prisma) {
+      throw new Error("Prisma no disponible");
+    }
+
+    const orderBy =
+      ranking === "recent"
+        ? [{ createdAt: "desc" as const }]
+        : ranking === "most-consulted"
+          ? [{ inquiryCount: "desc" as const }, { createdAt: "desc" as const }]
+          : [{ viewCount: "desc" as const }, { createdAt: "desc" as const }];
+
+    const products = await prisma.product.findMany({
+      where: { status: "ACTIVE", isAvailable: true },
+      select: productCardSelect,
+      orderBy,
+      take: 8
+    });
+
+    return products.map(mapProduct);
+  },
+  ["home-products-by-ranking"],
   { revalidate: HOME_REVALIDATE_SECONDS }
 );
 
@@ -364,17 +357,108 @@ const getCachedProductBySlug = cache(
 );
 
 export async function getHomeData() {
+  const [heroBanners, secondaryBanners, recentProducts, mostConsultedProducts, mostViewedProducts] =
+    await Promise.all([
+      getHomeHeroBanners(),
+      getHomeSecondaryBanners(),
+      getHomeRecentProducts(),
+      getHomeMostConsultedProducts(),
+      getHomeMostViewedProducts()
+    ]);
+
+  return {
+    heroBanners,
+    secondaryBanners,
+    recentProducts,
+    mostConsultedProducts,
+    mostViewedProducts
+  };
+}
+
+export async function getHomePrimaryData() {
+  const [heroBanners, recentProducts] = await Promise.all([
+    getHomeHeroBanners(),
+    getHomeRecentProducts()
+  ]);
+
+  return {
+    heroBanners,
+    recentProducts
+  };
+}
+
+export async function getHomeHeroBanners() {
   if (prisma) {
     try {
-      return await getCachedHomeData();
+      return await getCachedBannersByPlacement("HERO");
     } catch {
     }
   }
 
   try {
-    return await getHomeDataFromStore();
+    return (await getHomeDataFromStore()).heroBanners;
   } catch {
-    return getMockHomeData();
+    return getMockHomeData().heroBanners;
+  }
+}
+
+export async function getHomeSecondaryBanners() {
+  if (prisma) {
+    try {
+      return await getCachedBannersByPlacement("SECONDARY");
+    } catch {
+    }
+  }
+
+  try {
+    return (await getHomeDataFromStore()).secondaryBanners;
+  } catch {
+    return getMockHomeData().secondaryBanners;
+  }
+}
+
+export async function getHomeRecentProducts() {
+  if (prisma) {
+    try {
+      return await getCachedProductsByRanking("recent");
+    } catch {
+    }
+  }
+
+  try {
+    return (await getHomeDataFromStore()).recentProducts;
+  } catch {
+    return getMockHomeData().recentProducts;
+  }
+}
+
+export async function getHomeMostConsultedProducts() {
+  if (prisma) {
+    try {
+      return await getCachedProductsByRanking("most-consulted");
+    } catch {
+    }
+  }
+
+  try {
+    return (await getHomeDataFromStore()).mostConsultedProducts;
+  } catch {
+    return getMockHomeData().mostConsultedProducts;
+  }
+}
+
+export async function getHomeMostViewedProducts() {
+  if (prisma) {
+    try {
+      return await getCachedProductsByRanking("most-viewed");
+    } catch {
+    }
+  }
+
+  try {
+    return (await getHomeDataFromStore()).mostViewedProducts;
+  } catch {
+    return getMockHomeData().mostViewedProducts;
   }
 }
 
@@ -404,21 +488,14 @@ export async function getProductBySlug(
   slug: string,
   options: { incrementView?: boolean } = { incrementView: true }
 ) {
+  void options;
+
   if (prisma) {
     try {
       const product = await getCachedProductBySlug(slug);
 
       if (!product) {
         return null;
-      }
-
-      if (options.incrementView !== false) {
-        prisma.product
-          .update({
-            where: { id: product.id },
-            data: { viewCount: { increment: 1 } }
-          })
-          .catch(() => undefined);
       }
 
       return product;
@@ -430,5 +507,33 @@ export async function getProductBySlug(
     return await getProductBySlugFromStore(slug, options);
   } catch {
     return mockProducts.find((product) => product.slug === slug) ?? null;
+  }
+}
+
+export async function incrementProductView(slug: string) {
+  if (prisma) {
+    try {
+      const result = await prisma.product.updateMany({
+        where: {
+          slug,
+          status: "ACTIVE",
+          isAvailable: true
+        },
+        data: {
+          viewCount: {
+            increment: 1
+          }
+        }
+      });
+
+      return result.count > 0;
+    } catch {
+    }
+  }
+
+  try {
+    return Boolean(await getProductBySlugFromStore(slug, { incrementView: true }));
+  } catch {
+    return false;
   }
 }

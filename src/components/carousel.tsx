@@ -40,7 +40,13 @@ export function Carousel({ banners, variant = "hero", label }: CarouselProps) {
 
   const content = (
     <>
-      <img src={activeBanner.imageUrl} alt="" className="carousel-image" />
+      <img
+        src={activeBanner.imageUrl}
+        alt=""
+        className="carousel-image"
+        loading={variant === "hero" ? "eager" : "lazy"}
+        decoding="async"
+      />
       <div className="carousel-shade" />
       <div className="container carousel-content">
         <p className="eyebrow">{variant === "hero" ? "Catalogo de temporada" : "Promociones"}</p>
