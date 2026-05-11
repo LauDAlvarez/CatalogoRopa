@@ -19,6 +19,7 @@ import type {
   CatalogFilters,
   ProductCardData
 } from "@/lib/types";
+import { resolveUploadUrl, resolveUploadUrls } from "@/lib/uploads-config";
 
 const HOME_REVALIDATE_SECONDS = 300;
 const CATALOG_REVALIDATE_SECONDS = 300;
@@ -86,14 +87,17 @@ function normalizeCatalogFilters(filters: CatalogFilters): CatalogFilters {
 
 function extractImageUrls(imageUrls: unknown, imageUrl: string | null) {
   const urlsFromJson = Array.isArray(imageUrls)
-    ? imageUrls.filter((value): value is string => typeof value === "string" && value.length > 0)
+    ? resolveUploadUrls(
+        imageUrls.filter((value): value is string => typeof value === "string" && value.length > 0)
+      )
     : [];
 
   if (urlsFromJson.length) {
     return urlsFromJson;
   }
 
-  return imageUrl ? [imageUrl] : [];
+  const resolvedImageUrl = resolveUploadUrl(imageUrl);
+  return resolvedImageUrl ? [resolvedImageUrl] : [];
 }
 
 function mapProduct(product: {
@@ -154,7 +158,7 @@ function mapBanner(banner: {
     titleColor: banner.titleColor || null,
     subtitle: banner.subtitle,
     subtitleColor: banner.subtitleColor || null,
-    imageUrl: banner.imageUrl,
+    imageUrl: resolveUploadUrl(banner.imageUrl) || banner.imageUrl,
     placement: banner.placement
   };
 }

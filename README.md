@@ -14,8 +14,9 @@ Sitio publico del catalogo de ropa.
 1. Copia `.env.example` a `.env`.
 2. Configura `DATABASE_URL` apuntando a la misma base que `catalogo-admin`.
 3. Configura `NEXT_PUBLIC_SITE_URL` con el dominio final, incluyendo protocolo, por ejemplo `https://catalogo.betadevstudio.com`.
-4. Configura el numero de WhatsApp y, si quieres, Cloudflare Turnstile.
-5. Ejecuta:
+4. Si las imagenes se suben desde `catalogo-admin` en otro deploy, configura `UPLOADS_PUBLIC_BASE_URL`, por ejemplo `https://admcatalogo.betadevstudio.com`.
+5. Configura el numero de WhatsApp y, si quieres, Cloudflare Turnstile.
+6. Ejecuta:
 
 ```bash
 npm install
@@ -46,3 +47,4 @@ El sitio corre por defecto en `http://localhost:3005`.
 
 - Si `DATABASE_URL` no esta configurada, el sitio usa mocks o el archivo compartido `../.catalogo-dev-data.json`.
 - La configuracion de WhatsApp se lee desde MySQL en produccion y desde el archivo compartido solo en modo local.
+- Si `UPLOADS_PUBLIC_BASE_URL` esta configurada, cualquier ruta guardada como `/uploads/...` se resuelve contra esa URL.
