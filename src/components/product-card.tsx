@@ -1,11 +1,17 @@
+import { buildResponsiveImageSet } from "@/lib/cloudinary-images";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import type { ProductCardData } from "@/lib/types";
 
 export function ProductCard({ product }: { product: ProductCardData }) {
   const price = formatPrice(product.price);
-  const primaryImage = product.imageUrls?.[0] || product.imageUrl;
+  const primaryImage = product.imageAsset?.secureUrl || product.imageUrls?.[0] || product.imageUrl;
   const imageCount = product.imageUrls?.length || (primaryImage ? 1 : 0);
+  const imageProps = buildResponsiveImageSet(primaryImage, [280, 360, 520, 760], {
+    aspectRatio: "4:5",
+    crop: "fill",
+    gravity: "auto"
+  });
 
   return (
     <article className="product-card">
@@ -13,7 +19,9 @@ export function ProductCard({ product }: { product: ProductCardData }) {
         {primaryImage ? (
           <>
             <img
-              src={primaryImage}
+              src={imageProps.src}
+              srcSet={imageProps.srcSet}
+              sizes="(max-width: 767px) 92vw, (max-width: 1100px) 48vw, 32vw"
               alt={product.name}
               className="product-image"
               loading="lazy"

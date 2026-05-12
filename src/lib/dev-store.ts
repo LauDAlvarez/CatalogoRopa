@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import {
+  parseCloudinaryImageAsset,
+  parseCloudinaryImageAssets,
+  type CloudinaryImageAsset
+} from "@/lib/cloudinary-images";
 import { normalizeText } from "@/lib/format";
 import { collectFacetColors, productMatchesColor } from "@/lib/product-colors";
 import { collectFacetSizes, productMatchesSize } from "@/lib/product-size";
@@ -18,6 +23,7 @@ type ProductRecord = ProductCardData & {
   price: number | null;
   imageUrl: string | null;
   imageUrls: string[];
+  imageAssets?: CloudinaryImageAsset[];
   sizeFrom: string | null;
   sizeTo: string | null;
   isOneSize: boolean;
@@ -33,6 +39,7 @@ type BannerRecord = BannerData & {
   subtitle: string | null;
   subtitleColor?: string | null;
   targetUrl: string | null;
+  imageAsset?: CloudinaryImageAsset | null;
   placement: BannerPlacement;
   sortOrder: number;
   isActive: boolean;
@@ -147,15 +154,28 @@ function mapProduct(record: ProductRecord): ProductCardData & {
     : record.imageUrl
       ? [record.imageUrl]
       : [];
+  const imageAssets = parseCloudinaryImageAssets(record.imageAssets);
 
   return {
     ...record,
     imageUrl: imageUrls[0] || null,
     imageUrls,
+    imageAsset: imageAssets[0] || null,
+    imageAssets,
     sizeFrom: record.sizeFrom || record.size || null,
     sizeTo: record.isOneSize ? null : record.sizeTo || record.size || null,
     isOneSize: Boolean(record.isOneSize),
     createdAt: new Date(record.createdAt)
+  };
+}
+
+function mapBanner(record: BannerRecord): BannerRecord {
+  const imageAsset = parseCloudinaryImageAsset(record.imageAsset);
+
+  return {
+    ...record,
+    imageAsset,
+    imageUrl: imageAsset?.secureUrl || record.imageUrl
   };
 }
 
@@ -224,7 +244,9 @@ export async function getHomeDataFromStore() {
   const activeProducts = store.products
     .map(mapProduct)
     .filter((product) => product.status === "ACTIVE" && product.isAvailable);
-  const activeBanners = store.banners.filter((banner) => bannerIsActive(banner, now));
+  const activeBanners = store.banners
+    .filter((banner) => bannerIsActive(banner, now))
+    .map(mapBanner);
 
   return {
     heroBanners: activeBanners

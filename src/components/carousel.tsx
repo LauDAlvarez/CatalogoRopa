@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { buildResponsiveImageSet } from "@/lib/cloudinary-images";
 import type { BannerData } from "@/lib/types";
 
 type CarouselProps = {
@@ -13,6 +14,15 @@ export function Carousel({ banners, variant = "hero", label }: CarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const safeBanners = useMemo(() => banners.filter((banner) => banner.imageUrl), [banners]);
   const activeBanner = safeBanners[activeIndex] ?? safeBanners[0];
+  const imageProps = buildResponsiveImageSet(
+    activeBanner?.imageAsset?.secureUrl || activeBanner?.imageUrl,
+    variant === "hero" ? [640, 960, 1280, 1600, 1920] : [480, 720, 960, 1280, 1600],
+    {
+      aspectRatio: variant === "hero" ? "16:9" : "16:7",
+      crop: "fill",
+      gravity: "auto"
+    }
+  );
 
   useEffect(() => {
     if (safeBanners.length <= 1) {
@@ -41,11 +51,14 @@ export function Carousel({ banners, variant = "hero", label }: CarouselProps) {
   const content = (
     <>
       <img
-        src={activeBanner.imageUrl}
+        src={imageProps.src}
+        srcSet={imageProps.srcSet}
+        sizes="100vw"
         alt=""
         className="carousel-image"
         loading={variant === "hero" ? "eager" : "lazy"}
         decoding="async"
+        fetchPriority={variant === "hero" ? "high" : "auto"}
       />
       <div className="carousel-shade" />
       <div className="container carousel-content">

@@ -1,3 +1,5 @@
+import type { CloudinaryImageAsset } from "@/lib/cloudinary-images";
+
 export type Gender = "MUJER" | "HOMBRE" | "UNISEX" | "NINOS";
 export type BannerPlacement = "HERO" | "SECONDARY";
 
@@ -17,6 +19,8 @@ export type ProductCardData = {
   price?: number | null;
   imageUrl?: string | null;
   imageUrls?: string[];
+  imageAsset?: CloudinaryImageAsset | null;
+  imageAssets?: CloudinaryImageAsset[];
   createdAt?: Date | string;
   viewCount?: number;
   inquiryCount?: number;
@@ -29,6 +33,7 @@ export type BannerData = {
   subtitle?: string | null;
   subtitleColor?: string | null;
   imageUrl: string;
+  imageAsset?: CloudinaryImageAsset | null;
   placement: BannerPlacement;
 };
 

@@ -19,6 +19,10 @@ import type {
   CatalogFilters,
   ProductCardData
 } from "@/lib/types";
+import {
+  parseCloudinaryImageAsset,
+  parseCloudinaryImageAssets
+} from "@/lib/cloudinary-images";
 import { resolveUploadUrl, resolveUploadUrls } from "@/lib/uploads-config";
 
 const HOME_REVALIDATE_SECONDS = 300;
@@ -39,6 +43,7 @@ const bannerSelect = {
   subtitle: true,
   subtitleColor: true,
   imageUrl: true,
+  imageAsset: true,
   placement: true
 };
 
@@ -58,6 +63,7 @@ const productCardSelect = {
   price: true,
   imageUrl: true,
   imageUrls: true,
+  imageAssets: true,
   createdAt: true,
   viewCount: true,
   inquiryCount: true
@@ -85,7 +91,21 @@ function normalizeCatalogFilters(filters: CatalogFilters): CatalogFilters {
   };
 }
 
-function extractImageUrls(imageUrls: unknown, imageUrl: string | null) {
+function extractImageUrls(
+  imageAssets: unknown,
+  imageUrls: unknown,
+  imageUrl: string | null
+) {
+  const assets = parseCloudinaryImageAssets(imageAssets);
+
+  if (assets.length) {
+    return {
+      imageAsset: assets[0] || null,
+      imageAssets: assets,
+      imageUrls: assets.map((asset) => asset.secureUrl)
+    };
+  }
+
   const urlsFromJson = Array.isArray(imageUrls)
     ? resolveUploadUrls(
         imageUrls.filter((value): value is string => typeof value === "string" && value.length > 0)
@@ -93,11 +113,19 @@ function extractImageUrls(imageUrls: unknown, imageUrl: string | null) {
     : [];
 
   if (urlsFromJson.length) {
-    return urlsFromJson;
+    return {
+      imageAsset: null,
+      imageAssets: [],
+      imageUrls: urlsFromJson
+    };
   }
 
   const resolvedImageUrl = resolveUploadUrl(imageUrl);
-  return resolvedImageUrl ? [resolvedImageUrl] : [];
+  return {
+    imageAsset: null,
+    imageAssets: [],
+    imageUrls: resolvedImageUrl ? [resolvedImageUrl] : []
+  };
 }
 
 function mapProduct(product: {
@@ -116,11 +144,16 @@ function mapProduct(product: {
   price: { toString(): string } | number | null;
   imageUrl: string | null;
   imageUrls?: unknown;
+  imageAssets?: unknown;
   createdAt: Date;
   viewCount: number;
   inquiryCount: number;
 }): ProductCardData {
-  const imageUrls = extractImageUrls(product.imageUrls, product.imageUrl);
+  const { imageAsset, imageAssets, imageUrls } = extractImageUrls(
+    product.imageAssets,
+    product.imageUrls,
+    product.imageUrl
+  );
   const sizeFrom = product.sizeFrom || product.size || null;
   const isOneSize = Boolean(product.isOneSize);
   const sizeTo = isOneSize ? null : product.sizeTo || sizeFrom;
@@ -137,6 +170,8 @@ function mapProduct(product: {
     sizeFrom,
     sizeTo,
     isOneSize,
+    imageAsset,
+    imageAssets,
     imageUrl: imageUrls[0] || null,
     imageUrls,
     price: product.price === null ? null : Number(product.price.toString())
@@ -150,15 +185,22 @@ function mapBanner(banner: {
   subtitle: string | null;
   subtitleColor?: string | null;
   imageUrl: string;
+  imageAsset?: unknown;
   placement: BannerData["placement"];
 }): BannerData {
+  const imageAsset = parseCloudinaryImageAsset(banner.imageAsset);
+
   return {
     id: banner.id,
     title: banner.title,
     titleColor: banner.titleColor || null,
     subtitle: banner.subtitle,
     subtitleColor: banner.subtitleColor || null,
-    imageUrl: resolveUploadUrl(banner.imageUrl) || banner.imageUrl,
+    imageUrl:
+      imageAsset?.secureUrl ||
+      resolveUploadUrl(banner.imageUrl) ||
+      banner.imageUrl,
+    imageAsset,
     placement: banner.placement
   };
 }

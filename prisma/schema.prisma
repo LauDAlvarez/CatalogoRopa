@@ -49,8 +49,9 @@ model Product {
   isOneSize        Boolean       @default(false)
   predominantColor String
   price            Decimal?      @db.Decimal(10, 2)
-  imageUrl         String?
+  imageUrl         String?       @db.Text
   imageUrls        Json?
+  imageAssets      Json?
   isAvailable      Boolean       @default(true)
   status           ProductStatus @default(ACTIVE)
   viewCount        Int           @default(0)
@@ -70,7 +71,8 @@ model Banner {
   titleColor  String?
   subtitle    String?
   subtitleColor String?
-  imageUrl    String
+  imageUrl      String          @db.Text
+  imageAsset    Json?
   targetUrl   String?
   placement   BannerPlacement
   sortOrder   Int             @default(0)
