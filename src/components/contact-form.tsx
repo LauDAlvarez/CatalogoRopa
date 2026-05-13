@@ -51,15 +51,22 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey?: string })
         </label>
       </div>
 
-      <label>
-        <span>Email</span>
-        <input name="email" type="email" autoComplete="email" required />
-        <FieldError errors={state.fieldErrors?.email} />
-      </label>
+      <div className="form-grid">
+        <label>
+          <span>Email</span>
+          <input name="email" type="email" autoComplete="email" required />
+          <FieldError errors={state.fieldErrors?.email} />
+        </label>
+        <label>
+          <span>Numero</span>
+          <input name="phone" type="tel" autoComplete="tel" inputMode="tel" required />
+          <FieldError errors={state.fieldErrors?.phone} />
+        </label>
+      </div>
 
       <label>
         <span>Comentario</span>
-        <textarea name="comment" rows={6} required />
+        <textarea name="comment" rows={5} required />
         <FieldError errors={state.fieldErrors?.comment} />
       </label>
 

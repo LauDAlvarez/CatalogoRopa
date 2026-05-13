@@ -26,6 +26,7 @@ type ContactWhatsappTemplateInput = {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   comment: string;
 };
 
@@ -116,6 +117,7 @@ export function renderContactWhatsappMessage(
     intro,
     `Nombre: ${contact.firstName} ${contact.lastName}`.trim(),
     `Email: ${contact.email}`,
+    `Telefono: ${contact.phone}`,
     "Consulta:",
     contact.comment.trim()
   ]

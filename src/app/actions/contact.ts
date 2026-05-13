@@ -30,6 +30,15 @@ const contactSchema = z.object({
     .min(2, "Ingresa al menos 2 caracteres.")
     .max(80, "El apellido es demasiado largo."),
   email: z.string().trim().email("Ingresa un email valido.").max(160),
+  phone: z
+    .string()
+    .trim()
+    .min(8, "Ingresa un numero de contacto.")
+    .max(40, "El numero es demasiado largo.")
+    .refine((value) => {
+      const digits = value.replace(/\D/g, "");
+      return digits.length >= 8 && digits.length <= 15;
+    }, "Ingresa un numero valido."),
   comment: z
     .string()
     .trim()
@@ -143,6 +152,7 @@ export async function submitContact(
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
     email: formData.get("email"),
+    phone: formData.get("phone"),
     comment: formData.get("comment"),
     website: formData.get("website"),
     startedAt: formData.get("startedAt")
@@ -223,6 +233,7 @@ export async function submitContact(
           firstName: parsed.data.firstName,
           lastName: parsed.data.lastName,
           email: parsed.data.email,
+          phone: parsed.data.phone,
           comment: parsed.data.comment,
           ipHash,
           userAgent: headerStore.get("user-agent")?.slice(0, 240)
@@ -255,6 +266,7 @@ export async function submitContact(
       firstName: parsed.data.firstName,
       lastName: parsed.data.lastName,
       email: parsed.data.email,
+      phone: parsed.data.phone,
       comment: parsed.data.comment,
       ipHash,
       userAgent: headerStore.get("user-agent")?.slice(0, 240) || null

@@ -564,15 +564,23 @@ img {
 .contact-copy {
   display: grid;
   gap: 18px;
+  max-width: 600px;
+}
+
+.contact-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 560px);
+  gap: 40px;
 }
 
 .contact-form {
   display: grid;
-  gap: 18px;
+  gap: 16px;
+  width: 100%;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  padding: 24px;
+  box-shadow: 0 10px 25px rgba(27, 31, 29, 0.05);
+  padding: 22px;
 }
 
 .contact-form-placeholder {
@@ -623,6 +631,7 @@ img {
 }
 
 .contact-form textarea {
+  min-height: 160px;
   resize: vertical;
 }
 

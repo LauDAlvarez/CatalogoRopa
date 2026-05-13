@@ -90,6 +90,7 @@ model ContactMessage {
   firstName String
   lastName  String
   email     String
+  phone     String        @default("")
   comment   String        @db.Text
   ipHash    String?
   userAgent String?

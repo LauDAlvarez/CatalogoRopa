@@ -54,6 +54,7 @@ type ContactMessageRecord = {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   comment: string;
   ipHash: string | null;
   userAgent: string | null;
@@ -321,6 +322,7 @@ export async function createContactMessage(data: {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   comment: string;
   ipHash: string;
   userAgent: string | null;
@@ -331,6 +333,7 @@ export async function createContactMessage(data: {
     firstName: data.firstName,
     lastName: data.lastName,
     email: data.email,
+    phone: data.phone,
     comment: data.comment,
     ipHash: data.ipHash,
     userAgent: data.userAgent,
