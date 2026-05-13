@@ -22,9 +22,7 @@ export default async function Home() {
             <h2>Prendas faciles de consultar, elegir y combinar.</h2>
           </div>
           <p>
-            {siteConfig.brandName} organiza su catalogo para que puedas revisar modelos,
-            talles y colores sin perder tiempo. Cada producto muestra la informacion
-            principal y deja la consulta abierta para confirmar disponibilidad.
+            Pendas que te hacen sentir cómodx y con estilo al mismo tiempo. Revisá modelos, talles y colores cuando quieras y escribinos por WhatsApp. Te atendemos de manera personalizada para que te lleves exactamente lo que buscás. 
           </p>
         </div>
       </section>
@@ -55,24 +53,21 @@ export default async function Home() {
           <h2>Preguntas frecuentes</h2>
           <div className="faq-grid">
             <article>
-              <h3>Como confirmo disponibilidad?</h3>
+              <h3>¿Cómo hago para comprar?</h3>
               <p>
-                Envianos una consulta con el producto, talle y color. Te respondemos con
-                el stock actualizado.
+                Encontrás lo que te gusta en el catálogo, hacés clic en "Comprar" y te mandamos directo a WhatsApp. Te atendemos al toque 📲
               </p>
             </article>
             <article>
-              <h3>Los precios pueden cambiar?</h3>
+              <h3>¿Por qué se compra por WhatsApp?</h3>
               <p>
-                Si. El catalogo ayuda a consultar rapido, pero la confirmacion final se
-                hace al momento de la compra.
+                 Porque nos gusta atenderte bien. Te asesoramos con el talle, el color y las opciones disponibles antes de confirmar tu pedido ✔
               </p>
             </article>
             <article>
-              <h3>Puedo pedir otro talle o color?</h3>
+              <h3>¿Los precios del catálogo son finales?</h3>
               <p>
-                Si el modelo tiene variantes, podemos indicarte las opciones disponibles
-                por mensaje.
+                Los precios están siempre actualizados, pero la confirmación final la hacemos por WhatsApp para asegurarnos de darte el mejor dato 🙌🏼
               </p>
             </article>
           </div>
@@ -83,10 +78,9 @@ export default async function Home() {
         <div className="container contact-grid">
           <div>
             <p className="eyebrow">Contacto</p>
-            <h2>Escribinos por WhatsApp</h2>
+            <h2>¿Tenés alguna duda?</h2>
             <p>
-              Completa tus datos y te abrimos WhatsApp con la consulta armada. El formulario
-              limita hasta 3 envios por hora desde la misma conexion.
+              Completá el formulario y te respondemos lo más rápido posible.
             </p>
           </div>
           <DeferredContactForm turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
