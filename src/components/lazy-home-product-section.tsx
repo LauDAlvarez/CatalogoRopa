@@ -7,7 +7,7 @@ import type { ProductCardData } from "@/lib/types";
 type LazyHomeProductSectionProps = {
   title: string;
   eyebrow: string;
-  section: "most-consulted" | "most-viewed";
+  products: ProductCardData[];
 };
 
 function ProductSectionSkeleton({
@@ -45,11 +45,10 @@ function ProductSectionSkeleton({
 export function LazyHomeProductSection({
   title,
   eyebrow,
-  section
+  products
 }: LazyHomeProductSectionProps) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [isActive, setIsActive] = useState(false);
-  const [products, setProducts] = useState<ProductCardData[] | null>(null);
 
   useEffect(() => {
     if (isActive) {
@@ -76,33 +75,9 @@ export function LazyHomeProductSection({
     observer.observe(node);
     return () => observer.disconnect();
   }, [isActive]);
-
-  useEffect(() => {
-    if (!isActive || products !== null) {
-      return;
-    }
-
-    const controller = new AbortController();
-
-    fetch(`/api/home/sections?section=${section}`, {
-      signal: controller.signal
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error("No pudimos cargar la seccion.");
-        }
-
-        return (await response.json()) as { products?: ProductCardData[] };
-      })
-      .then((payload) => setProducts(payload.products || []))
-      .catch(() => setProducts([]));
-
-    return () => controller.abort();
-  }, [isActive, products, section]);
-
   return (
     <div ref={sentinelRef}>
-      {products ? (
+      {isActive ? (
         <ProductSection title={title} eyebrow={eyebrow} products={products} />
       ) : (
         <ProductSectionSkeleton title={title} eyebrow={eyebrow} />

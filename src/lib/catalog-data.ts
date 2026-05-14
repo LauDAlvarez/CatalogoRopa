@@ -1,18 +1,18 @@
 import { unstable_cache as cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import {
-  getCatalogProductsFromStore,
+  getCatalogDatasetFromStore,
   getHomeDataFromStore,
   getProductBySlugFromStore
 } from "@/lib/dev-store";
-import { normalizeText } from "@/lib/format";
 import {
   mockHeroBanners,
   mockProducts,
   mockSecondaryBanners
 } from "@/lib/mock-data";
-import { collectFacetColors, productMatchesColor } from "@/lib/product-colors";
-import { buildSizeLabel, collectFacetSizes, productMatchesSize } from "@/lib/product-size";
+import { filterCatalogProducts, normalizeCatalogFilters } from "@/lib/catalog-filters";
+import { collectFacetColors } from "@/lib/product-colors";
+import { buildSizeLabel, collectFacetSizes } from "@/lib/product-size";
 import type {
   BannerData,
   CatalogFacets,
@@ -27,14 +27,8 @@ import { resolveUploadUrl, resolveUploadUrls } from "@/lib/uploads-config";
 
 const HOME_REVALIDATE_SECONDS = 300;
 const CATALOG_REVALIDATE_SECONDS = 300;
-const PRODUCT_REVALIDATE_SECONDS = 600;
+const CATALOG_DATASET_LIMIT = 120;
 const FACETS_REVALIDATE_SECONDS = 900;
-const allowedGenders = new Set<ProductCardData["gender"]>([
-  "MUJER",
-  "HOMBRE",
-  "UNISEX",
-  "NINOS"
-]);
 
 const bannerSelect = {
   id: true,
@@ -68,28 +62,6 @@ const productCardSelect = {
   viewCount: true,
   inquiryCount: true
 };
-
-function normalizeFilterValue(value: string | undefined, maxLength: number) {
-  const trimmed = value?.trim();
-
-  if (!trimmed) {
-    return undefined;
-  }
-
-  return trimmed.slice(0, maxLength);
-}
-
-function normalizeCatalogFilters(filters: CatalogFilters): CatalogFilters {
-  const gender = normalizeFilterValue(filters.gender, 20);
-
-  return {
-    q: normalizeFilterValue(filters.q, 80),
-    type: normalizeFilterValue(filters.type, 80),
-    gender: gender && allowedGenders.has(gender as ProductCardData["gender"]) ? gender : undefined,
-    size: normalizeFilterValue(filters.size, 20),
-    color: normalizeFilterValue(filters.color, 60)
-  };
-}
 
 function extractImageUrls(
   imageAssets: unknown,
@@ -214,34 +186,6 @@ function getMockFacets(products: ProductCardData[]): CatalogFacets {
   };
 }
 
-function filterMockProducts(filters: CatalogFilters) {
-  const q = filters.q ? normalizeText(filters.q) : "";
-
-  return mockProducts.filter((product) => {
-    const matchesSearch =
-      !q ||
-      normalizeText(
-        [
-          product.name,
-          product.description,
-          product.garmentType,
-          product.productModel,
-          product.predominantColor
-        ]
-          .filter(Boolean)
-          .join(" ")
-      ).includes(q);
-
-    return (
-      matchesSearch &&
-      (!filters.type || product.garmentType === filters.type) &&
-      (!filters.gender || product.gender === filters.gender) &&
-      productMatchesSize(product, filters.size) &&
-      productMatchesColor(product, filters.color)
-    );
-  });
-}
-
 function getMockHomeData() {
   return {
     heroBanners: mockHeroBanners,
@@ -337,69 +281,26 @@ const getCachedCatalogFacets = cache(
   { revalidate: FACETS_REVALIDATE_SECONDS }
 );
 
-const getCachedCatalogProducts = cache(
-  async (filters: CatalogFilters) => {
+const getCachedCatalogDataset = cache(
+  async () => {
     if (!prisma) {
       throw new Error("Prisma no disponible");
     }
 
     const products = await prisma.product.findMany({
-      where: {
-        status: "ACTIVE",
-        isAvailable: true,
-        ...(filters.type ? { garmentType: filters.type } : {}),
-        ...(filters.gender ? { gender: filters.gender as ProductCardData["gender"] } : {}),
-        ...(filters.q
-          ? {
-              OR: [
-                { name: { contains: filters.q } },
-                { description: { contains: filters.q } },
-                { garmentType: { contains: filters.q } },
-                { productModel: { contains: filters.q } },
-                { predominantColor: { contains: filters.q } }
-              ]
-            }
-          : {})
-      },
+      where: { status: "ACTIVE", isAvailable: true },
       select: productCardSelect,
       orderBy: { createdAt: "desc" },
-      take: 120
+      take: CATALOG_DATASET_LIMIT
     });
 
-    const activeProducts = products.map(mapProduct);
-    const filteredProducts = activeProducts.filter(
-      (product) =>
-        productMatchesSize(product, filters.size) && productMatchesColor(product, filters.color)
-    );
-
     return {
-      products: filteredProducts.slice(0, 60),
+      products: products.map(mapProduct),
       facets: await getCachedCatalogFacets()
     };
   },
-  ["catalog-products"],
+  ["catalog-dataset"],
   { revalidate: CATALOG_REVALIDATE_SECONDS }
-);
-
-const getCachedProductBySlug = cache(
-  async (slug: string) => {
-    if (!prisma) {
-      throw new Error("Prisma no disponible");
-    }
-
-    const product = await prisma.product.findFirst({
-      where: {
-        slug,
-        status: "ACTIVE",
-        isAvailable: true
-      },
-      select: productCardSelect
-    });
-
-    return product ? mapProduct(product) : null;
-  },
-  ["product-by-slug"],
-  { revalidate: PRODUCT_REVALIDATE_SECONDS }
 );
 
 export async function getHomeData() {
@@ -511,23 +412,46 @@ export async function getHomeMostViewedProducts() {
 export async function getCatalogProducts(filters: CatalogFilters) {
   const normalizedFilters = normalizeCatalogFilters(filters);
 
+  try {
+    const dataset = await getCatalogDataset();
+
+    return {
+      products: filterCatalogProducts(dataset.products, normalizedFilters).slice(0, 60),
+      facets: dataset.facets
+    };
+  } catch {
+    const filteredProducts = filterCatalogProducts(mockProducts, normalizedFilters);
+
+    return {
+      products: filteredProducts.slice(0, 60),
+      facets: getMockFacets(mockProducts)
+    };
+  }
+}
+
+export async function getCatalogDataset() {
   if (prisma) {
     try {
-      return await getCachedCatalogProducts(normalizedFilters);
+      return await getCachedCatalogDataset();
     } catch {
     }
   }
 
   try {
-    return await getCatalogProductsFromStore(normalizedFilters);
+    return await getCatalogDatasetFromStore();
   } catch {
-    const filteredProducts = filterMockProducts(normalizedFilters);
-
     return {
-      products: filteredProducts,
+      products: [...mockProducts]
+        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+        .slice(0, CATALOG_DATASET_LIMIT),
       facets: getMockFacets(mockProducts)
     };
   }
+}
+
+export async function getCatalogProductSlugs() {
+  const { products } = await getCatalogDataset();
+  return products.map((product) => product.slug);
 }
 
 export async function getProductBySlug(
@@ -536,17 +460,14 @@ export async function getProductBySlug(
 ) {
   void options;
 
-  if (prisma) {
-    try {
-      const product = await getCachedProductBySlug(slug);
+  try {
+    const dataset = await getCatalogDataset();
+    const product = dataset.products.find((item) => item.slug === slug);
 
-      if (!product) {
-        return null;
-      }
-
+    if (product) {
       return product;
-    } catch {
     }
+  } catch {
   }
 
   try {

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { siteConfig } from "@/lib/site-config";
 
@@ -11,11 +10,13 @@ export function SiteFooter() {
         <div>
           <Link href="/" className="brand footer-brand" aria-label={`${siteConfig.brandName} inicio`}>
             <span className="brand-mark">
-              <Image
+              <img
                 src="/asset/logoamericansport-white.png"
                 alt=""
                 width={512}
                 height={512}
+                loading="lazy"
+                decoding="async"
               />
             </span>
             <span className="brand-copy">

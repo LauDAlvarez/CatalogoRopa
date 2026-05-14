@@ -12,6 +12,7 @@ import { collectFacetSizes, productMatchesSize } from "@/lib/product-size";
 import type { BannerData, CatalogFacets, CatalogFilters, ProductCardData } from "@/lib/types";
 
 export const DEV_STORE_FILENAME = ".catalogo-dev-data.json";
+const CATALOG_DATASET_LIMIT = 120;
 
 type ProductStatus = "DRAFT" | "ACTIVE" | "ARCHIVED";
 type BannerPlacement = "HERO" | "SECONDARY";
@@ -268,18 +269,29 @@ export async function getHomeDataFromStore() {
   };
 }
 
-export async function getCatalogProductsFromStore(filters: CatalogFilters) {
+export async function getCatalogDatasetFromStore() {
   const store = await readStore();
   const activeProducts = store.products
     .map(mapProduct)
     .filter((product) => product.status === "ACTIVE" && product.isAvailable);
-  const filteredProducts = filterProducts(activeProducts, filters);
+
+  return {
+    products: [...activeProducts]
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+      .slice(0, CATALOG_DATASET_LIMIT),
+    facets: getFacets(activeProducts)
+  };
+}
+
+export async function getCatalogProductsFromStore(filters: CatalogFilters) {
+  const dataset = await getCatalogDatasetFromStore();
+  const filteredProducts = filterProducts(dataset.products, filters);
 
   return {
     products: filteredProducts
       .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
       .slice(0, 60),
-    facets: getFacets(activeProducts)
+    facets: dataset.facets
   };
 }
 

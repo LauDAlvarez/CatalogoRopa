@@ -4,13 +4,19 @@ import { Carousel } from "@/components/carousel";
 import { LazyHomeCarousel } from "@/components/lazy-home-carousel";
 import { LazyHomeProductSection } from "@/components/lazy-home-product-section";
 import { StoreMap } from "@/components/store-map";
-import { getHomePrimaryData } from "@/lib/catalog-data";
-import { siteConfig } from "@/lib/site-config";
+import { getHomeData } from "@/lib/catalog-data";
 
+export const dynamic = "force-static";
 export const revalidate = 300;
 
 export default async function Home() {
-  const { heroBanners, recentProducts } = await getHomePrimaryData();
+  const {
+    heroBanners,
+    secondaryBanners,
+    recentProducts,
+    mostConsultedProducts,
+    mostViewedProducts
+  } = await getHomeData();
 
   return (
     <main>
@@ -36,16 +42,16 @@ export default async function Home() {
       <LazyHomeProductSection
         eyebrow="Consultas"
         title="Productos mas consultados"
-        section="most-consulted"
+        products={mostConsultedProducts}
       />
       <LazyHomeProductSection
         eyebrow="Interes"
         title="Productos mas vistos"
-        section="most-viewed"
+        products={mostViewedProducts}
       />
 
       <div className="section section-secondary-slider">
-        <LazyHomeCarousel />
+        <LazyHomeCarousel banners={secondaryBanners} />
       </div>
 
       <section id="faqs" className="faq-section">

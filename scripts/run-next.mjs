@@ -1,12 +1,13 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 const mode = process.argv[2];
 const defaultPort = process.argv[3];
 const minimumNodeVersion = [20, 9, 0];
 
-if (mode !== "dev" && mode !== "start") {
-  console.error('Uso: node scripts/run-next.mjs <dev|start> <defaultPort>');
+if (mode !== "dev" && mode !== "build" && mode !== "start") {
+  console.error('Uso: node scripts/run-next.mjs <dev|build|start> [defaultPort]');
   process.exit(1);
 }
 
@@ -43,16 +44,47 @@ if (isVersionLower(currentNodeVersion, minimumNodeVersion)) {
   process.exit(1);
 }
 
-const port = process.env.PORT?.trim() || defaultPort || "3005";
-const hostname = process.env.HOST?.trim() || process.env.HOSTNAME?.trim() || "0.0.0.0";
 const nextBin = path.resolve(process.cwd(), "node_modules", "next", "dist", "bin", "next");
-const args = [nextBin, mode, "--hostname", hostname, "--port", port];
+const env = {
+  ...process.env,
+  NODE_ENV: mode === "dev" ? process.env.NODE_ENV?.trim() || "development" : "production"
+};
 
-console.log(`[catalogo-web] next ${mode} escuchando en ${hostname}:${port}`);
+let args;
+
+if (mode === "build") {
+  args = [nextBin, "build"];
+  console.log("[catalogo-web] next build en modo production");
+} else if (mode === "start") {
+  const port = process.env.PORT?.trim() || defaultPort || "3005";
+  const hostname = process.env.HOST?.trim() || "0.0.0.0";
+  const standaloneServer = path.resolve(process.cwd(), ".next", "standalone", "server.js");
+
+  env.PORT = port;
+  env.HOST = hostname;
+  env.HOSTNAME = hostname;
+
+  if (existsSync(standaloneServer)) {
+    args = [standaloneServer];
+    console.log(`[catalogo-web] standalone server escuchando en ${hostname}:${port}`);
+  } else {
+    args = [nextBin, "start", "--hostname", hostname, "--port", port];
+    console.log(`[catalogo-web] next start escuchando en ${hostname}:${port}`);
+  }
+} else {
+  const port = process.env.PORT?.trim() || defaultPort || "3005";
+  const hostname = process.env.HOST?.trim() || "0.0.0.0";
+
+  args = [nextBin, "dev", "--hostname", hostname, "--port", port];
+  env.PORT = port;
+  env.HOST = hostname;
+  env.HOSTNAME = hostname;
+  console.log(`[catalogo-web] next dev escuchando en ${hostname}:${port}`);
+}
 
 const child = spawn(process.execPath, args, {
   stdio: "inherit",
-  env: process.env
+  env
 });
 
 child.on("exit", (code, signal) => {

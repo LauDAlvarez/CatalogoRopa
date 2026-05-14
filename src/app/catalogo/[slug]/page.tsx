@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductViewTracker } from "@/components/product-view-tracker";
 import { formatPrice } from "@/lib/format";
-import { getProductBySlug } from "@/lib/catalog-data";
+import { getCatalogProductSlugs, getProductBySlug } from "@/lib/catalog-data";
 import { siteConfig } from "@/lib/site-config";
 import { getWhatsappBubbleConfig } from "@/lib/whatsapp-config";
 import {
@@ -18,6 +18,11 @@ type ProductPageProps = {
 };
 
 export const revalidate = 600;
+
+export async function generateStaticParams() {
+  const slugs = await getCatalogProductSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;

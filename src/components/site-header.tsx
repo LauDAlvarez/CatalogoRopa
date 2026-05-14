@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { siteConfig } from "@/lib/site-config";
 
@@ -8,12 +7,14 @@ export function SiteHeader() {
       <div className="container header-inner">
         <Link href="/" className="brand" aria-label={`${siteConfig.brandName} inicio`}>
           <span className="brand-mark">
-            <Image
+            <img
               src="/asset/logoamercansport-black.png"
               alt=""
               width={512}
               height={512}
-              priority
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
             />
           </span>
           <span className="brand-copy">

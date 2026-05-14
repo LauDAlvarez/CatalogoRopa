@@ -17,10 +17,9 @@ function CarouselSkeleton() {
   );
 }
 
-export function LazyHomeCarousel() {
+export function LazyHomeCarousel({ banners }: { banners: BannerData[] }) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [isActive, setIsActive] = useState(false);
-  const [banners, setBanners] = useState<BannerData[] | null>(null);
 
   useEffect(() => {
     if (isActive) {
@@ -47,33 +46,15 @@ export function LazyHomeCarousel() {
     observer.observe(node);
     return () => observer.disconnect();
   }, [isActive]);
-
-  useEffect(() => {
-    if (!isActive || banners !== null) {
-      return;
-    }
-
-    const controller = new AbortController();
-
-    fetch("/api/home/sections?section=secondary-banners", {
-      signal: controller.signal
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error("No pudimos cargar los banners.");
-        }
-
-        return (await response.json()) as { banners?: BannerData[] };
-      })
-      .then((payload) => setBanners(payload.banners || []))
-      .catch(() => setBanners([]));
-
-    return () => controller.abort();
-  }, [banners, isActive]);
-
   return (
     <div ref={sentinelRef}>
-      {banners ? <Carousel banners={banners} variant="secondary" label="Banners secundarios" /> : <CarouselSkeleton />}
+      {isActive ? (
+        banners.length ? (
+          <Carousel banners={banners} variant="secondary" label="Banners secundarios" />
+        ) : null
+      ) : (
+        <CarouselSkeleton />
+      )}
     </div>
   );
 }

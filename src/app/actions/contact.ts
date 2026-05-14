@@ -49,6 +49,7 @@ const contactSchema = z.object({
 });
 
 const fallbackRateLimit = new Map<string, { count: number; resetAt: number }>();
+const EXTERNAL_REQUEST_TIMEOUT_MS = 5000;
 
 function getMaxContactMessagesPerHour() {
   const configured = Number(process.env.CONTACT_MAX_PER_HOUR || 3);
@@ -104,20 +105,25 @@ async function verifyTurnstile(token: FormDataEntryValue | null, ip: string) {
     return false;
   }
 
-  const response = await fetch(
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    {
-      method: "POST",
-      body: new URLSearchParams({
-        secret,
-        response: token,
-        remoteip: ip
-      })
-    }
-  );
+  try {
+    const response = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          secret,
+          response: token,
+          remoteip: ip
+        }),
+        signal: AbortSignal.timeout(EXTERNAL_REQUEST_TIMEOUT_MS)
+      }
+    );
 
-  const result = (await response.json()) as { success?: boolean };
-  return Boolean(result.success);
+    const result = (await response.json()) as { success?: boolean };
+    return Boolean(result.success);
+  } catch {
+    return false;
+  }
 }
 
 async function originIsAllowed(headerStore: Headers) {
