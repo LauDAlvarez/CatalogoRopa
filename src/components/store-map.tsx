@@ -28,7 +28,6 @@ export function StoreMap() {
         <div className="store-map-placeholder">
           <p className="store-map-label">Local</p>
           <strong>{STORE_ADDRESS}</strong>
-          <p>El mapa se carga solo si queres verlo, para no frenar la carga inicial del sitio.</p>
           <div className="store-map-actions">
             <button type="button" className="button" onClick={() => setIsMapVisible(true)}>
               Cargar mapa

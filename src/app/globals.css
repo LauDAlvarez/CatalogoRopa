@@ -780,6 +780,9 @@ img {
   padding: 54px 0 28px;
 }
 
+.fl{font-size:13px;color:var(--fg);}
+.fl b{color:var(--acc);}
+
 .footer-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

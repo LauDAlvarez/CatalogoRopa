@@ -22,9 +22,6 @@ export function SiteFooter() {
               <span className="brand-name">{siteConfig.brandName}</span>
             </span>
           </Link>
-          <p className="footer-copy">
-            Catalogo minimalista de prendas seleccionadas. Disponibilidad sujeta a stock.
-          </p>
         </div>
         <nav className="footer-nav" aria-label="Navegacion de pie de pagina">
           {siteConfig.nav.map((item) => (
@@ -36,6 +33,9 @@ export function SiteFooter() {
       </div>
       <div className="container copyright">
         <span>Copyright {year} {siteConfig.brandName}. Todos los derechos reservados.</span>
+        <span className="fl">
+            <b>&lt;</b>beta dev studio<b>&gt;</b>
+        </span>
       </div>
     </footer>
   );
